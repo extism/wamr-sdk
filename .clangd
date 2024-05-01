@@ -1,0 +1,2 @@
+CompileFlags:
+	Add: [-I, wasm-micro-runtime/core/iwasm/interpreter]
