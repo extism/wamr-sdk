@@ -135,6 +135,7 @@ ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
                                 size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
   if (extism_plugin_init(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
+    extism_plugin_free(plugin);
     return NULL;
   }
   return plugin;
