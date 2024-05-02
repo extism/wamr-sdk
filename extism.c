@@ -225,7 +225,6 @@ static void plugin_reset(ExtismPlugin *plugin) {
 
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
                                 void *input, size_t input_length) {
-
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {

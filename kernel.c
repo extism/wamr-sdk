@@ -180,13 +180,43 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
       wasm_runtime_call_wasm_a(env, kernel->error_get, 0, NULL, 1, params));
 }
 
-uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) { return 0; }
-uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) { return 0; }
-void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) { return; }
-uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
+uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
+  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  wasm_runtime_set_exception(plugin->instance,
+                             "extism:host/env::config_get not implemented");
+  wasm_runtime_terminate(plugin->instance);
   return 0;
 }
-uint32_t k_http_status_code(wasm_exec_env_t env) { return 0; }
+uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
+
+  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  wasm_runtime_set_exception(plugin->instance,
+                             "extism:host/env::var_get not implemented");
+  wasm_runtime_terminate(plugin->instance);
+  return 0;
+}
+void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
+
+  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  wasm_runtime_set_exception(plugin->instance,
+                             "extism:host/env::var_set not implemented");
+  wasm_runtime_terminate(plugin->instance);
+}
+uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
+  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  wasm_runtime_set_exception(plugin->instance,
+                             "extism:host/env::http_request not implemented");
+  wasm_runtime_terminate(plugin->instance);
+  return 0;
+}
+uint32_t k_http_status_code(wasm_exec_env_t env) {
+
+  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  wasm_runtime_set_exception(
+      plugin->instance, "extism:host/env::http_status_code not implemented");
+  wasm_runtime_terminate(plugin->instance);
+  return 0;
+}
 
 #define LOG_FN(name, prefix)                                                   \
   void k_log_##name(wasm_exec_env_t env, uint64_t msg) {                       \
