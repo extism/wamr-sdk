@@ -8,6 +8,7 @@ set (WAMR_BUILD_AOT 1)
 set (WAMR_BUILD_LIBC_BUILTIN 1)
 set (WAMR_BUILD_LIBC_WASI 1)
 set (WAMR_BUILD_SIMD 1)
+set (WAMR_BUILD_MULTI_MODULE 1)
 set (WAMR_ROOT_DIR wasm-micro-runtime)
 
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
