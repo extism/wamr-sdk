@@ -1,10 +1,8 @@
 #pragma once
 #include "extism-wamr.h"
 
-#include "../common/wasm_memory.h"
+#include "../common/wasm_exec_env.h"
 #include "wasm_export.h"
-#include "wasm_runtime.h"
-#include <lib_export.h>
 
 #include <assert.h>
 
@@ -60,3 +58,12 @@ void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch);
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v);
 uint64_t k_error_get(wasm_exec_env_t env);
 void k_error_set(wasm_exec_env_t env, uint64_t offs);
+
+void plugin_set_error(ExtismPlugin *plugin, const char *s);
+
+void use_kernel(ExtismPlugin *plugin);
+void use_plugin(ExtismPlugin *plugin);
+#define WITH_KERNEL(plugin, x)                                                 \
+  use_kernel(plugin);                                                          \
+  x;                                                                           \
+  use_plugin(plugin);

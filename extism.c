@@ -1,19 +1,14 @@
 #include "internal.h"
 
 #include <stdio.h>
+#include <string.h>
 
-void use_kernel(ExtismPlugin *plugin, wasm_exec_env_t env) {
-  if (env == NULL) {
-    env = plugin->exec;
-  }
-  wasm_runtime_set_module_inst(env, plugin->kernel.instance);
+void use_kernel(ExtismPlugin *plugin) {
+  wasm_runtime_set_module_inst(plugin->exec, plugin->kernel.instance);
 }
 
-void use_plugin(ExtismPlugin *plugin, wasm_exec_env_t env) {
-  if (env == NULL) {
-    env = plugin->exec;
-  }
-  wasm_runtime_set_module_inst(env, plugin->instance);
+void use_plugin(ExtismPlugin *plugin) {
+  wasm_runtime_set_module_inst(plugin->exec, plugin->instance);
 }
 
 void extism_runtime_init() { wasm_runtime_init(); }
@@ -21,6 +16,9 @@ void extism_runtime_init() { wasm_runtime_init(); }
 static void extism_kernel_cleanup(struct ExtismKernel *kernel) {
   if (kernel->instance) {
     wasm_runtime_deinstantiate(kernel->instance);
+  }
+  if (kernel->module) {
+    wasm_runtime_unload(kernel->module);
   }
 }
 
@@ -86,12 +84,6 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 }
 
 static void extism_plugin_cleanup(ExtismPlugin *plugin) {
-  extism_kernel_cleanup(&plugin->kernel);
-
-  for (size_t i = 0; i < plugin->module_count; i++) {
-    wasm_runtime_unload(plugin->modules[i]);
-  }
-
   if (plugin->exec) {
     wasm_exec_env_destroy(plugin->exec);
   }
@@ -99,6 +91,12 @@ static void extism_plugin_cleanup(ExtismPlugin *plugin) {
   if (plugin->instance) {
     wasm_runtime_deinstantiate(plugin->instance);
   }
+
+  for (size_t i = 0; i < plugin->module_count; i++) {
+    wasm_runtime_unload(plugin->modules[i]);
+  }
+
+  extism_kernel_cleanup(&plugin->kernel);
 }
 
 ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
@@ -115,10 +113,10 @@ void extism_plugin_free(ExtismPlugin *plugin) {
   os_free(plugin);
 }
 
-static uint64_t kernel_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
+static uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = size}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, NULL);
+  use_kernel(plugin);
   assert(wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.alloc, 1,
                                   results, 1, params));
   uint64_t offset = results[0].of.i64;
@@ -129,47 +127,68 @@ static uint64_t kernel_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
         {.kind = WASM_I32, .of = {.i32 = ((uint8_t *)s)[i]}}};
     if (!wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.store_u8, 0,
                                   NULL, 2, params)) {
+      use_plugin(plugin);
       return ExtismStatusCallFailed;
     }
   }
-  use_plugin(plugin, NULL);
+  use_plugin(plugin);
   return offset;
 }
 
-static void kernel_set_input(ExtismPlugin *plugin, uint64_t offs,
+static void plugin_set_input(ExtismPlugin *plugin, uint64_t offs,
                              size_t length) {
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
                          {.kind = WASM_I64, .of = {.i64 = length}}};
-  use_kernel(plugin, NULL);
-  wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.input_set, 0, NULL, 2,
-                           params);
-  use_plugin(plugin, NULL);
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.input_set,
+                                       0, NULL, 2, params));
 }
 
-static uint64_t kernel_output_offset(ExtismPlugin *plugin) {
+static uint64_t plugin_output_offset(ExtismPlugin *plugin) {
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, NULL);
-  wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.output_offset, 1,
-                           results, 0, NULL);
-  use_plugin(plugin, NULL);
+  WITH_KERNEL(plugin, wasm_runtime_call_wasm_a(plugin->exec,
+                                               plugin->kernel.output_offset, 1,
+                                               results, 0, NULL));
   return results[0].of.i64;
 }
 
-static uint64_t kernel_output_length(ExtismPlugin *plugin) {
+static uint64_t plugin_output_length(ExtismPlugin *plugin) {
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, NULL);
-  wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.output_length, 1,
-                           results, 0, NULL);
-  use_plugin(plugin, NULL);
+  WITH_KERNEL(plugin, wasm_runtime_call_wasm_a(plugin->exec,
+                                               plugin->kernel.output_length, 1,
+                                               results, 0, NULL));
   return results[0].of.i64;
 }
 
-static void kernel_reset(ExtismPlugin *plugin) {
-  use_kernel(plugin, NULL);
-  wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.reset, 0, NULL, 0,
-                           NULL);
+static uint64_t plugin_length(ExtismPlugin *plugin, uint64_t offs) {
+  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
+  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.length, 1,
+                                       results, 1, params));
+  return results[0].of.i64;
+}
 
-  use_plugin(plugin, NULL);
+static uint64_t plugin_error(ExtismPlugin *plugin) {
+  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.error_get,
+                                       1, results, 0, NULL));
+  return results[0].of.i64;
+}
+
+void plugin_set_error(ExtismPlugin *plugin, const char *s) {
+  uint64_t offs = plugin_alloc(plugin, s, strlen(s));
+  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.error_set,
+                                       0, NULL, 1, params));
+}
+
+static void plugin_reset(ExtismPlugin *plugin) {
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.reset, 0,
+                                       NULL, 0, NULL));
 }
 
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
@@ -178,32 +197,42 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {
+    plugin_set_error(plugin, "Function is undefined");
     return ExtismStatusErrUndefined;
   }
 
-  kernel_reset(plugin);
-  uint64_t input_offs = kernel_alloc(plugin, input, input_length);
-  kernel_set_input(plugin, input_offs, input_length);
+  plugin_reset(plugin);
+  uint64_t input_offs = plugin_alloc(plugin, input, input_length);
+  plugin_set_input(plugin, input_offs, input_length);
 
   wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
 
-  puts("AAA");
   uint32_t result_count = wasm_func_get_result_count(f, plugin->instance);
-  use_plugin(plugin, NULL);
+  use_plugin(plugin);
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
     return ExtismStatusCallFailed;
   }
-  puts("BBB");
 
   return ExtismStatusOk;
 }
 
 uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length) {
   if (length) {
-    *length = kernel_output_length(plugin);
+    *length = plugin_output_length(plugin);
   }
-  uint64_t offs = kernel_output_offset(plugin);
-  printf("OFFS=%ld\n", offs);
+  uint64_t offs = plugin_output_offset(plugin);
+  return wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
+}
+
+const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length) {
+  uint64_t offs = plugin_error(plugin);
+  if (offs == 0) {
+    return NULL;
+  }
+  size_t errlen = plugin_length(plugin, offs);
+  if (length) {
+    *length = errlen;
+  }
   return wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
 }

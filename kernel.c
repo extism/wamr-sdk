@@ -3,38 +3,41 @@
 #include "extism-runtime.h"
 #include "lib_export.h"
 
-#include <assert.h>
 #include <stdio.h>
 
-void use_kernel(ExtismPlugin *plugin, wasm_exec_env_t env);
-void use_plugin(ExtismPlugin *plugin, wasm_exec_env_t env);
+// KERNEL_CALL depends on `plugin` and `kernel` variables
+#define KERNEL_CALL(x)                                                         \
+  WITH_KERNEL(plugin, {                                                        \
+    if (!x) {                                                                  \
+      const char *s = wasm_runtime_get_exception(kernel->instance);            \
+      plugin_set_error(plugin, s);                                             \
+      use_plugin(plugin);                                                      \
+      wasm_runtime_set_exception(plugin->instance, s);                         \
+      wasm_runtime_terminate(plugin->instance);                                \
+    }                                                                          \
+  })
 
 uint64_t k_alloc(wasm_exec_env_t env, uint64_t size) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = size}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->alloc, 1, results, 1, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->alloc, 1, results, 1, params));
   return results[0].of.i64;
 }
 
 void k_reset(wasm_exec_env_t env, uint64_t size) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->reset, 0, NULL, 0, NULL));
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->reset, 0, NULL, 0, NULL));
 }
 
 void k_free(wasm_exec_env_t env, uint64_t offs) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->free, 0, NULL, 1, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->free, 0, NULL, 1, params));
 }
 
 uint64_t k_length(wasm_exec_env_t env, uint64_t offs) {
@@ -42,9 +45,8 @@ uint64_t k_length(wasm_exec_env_t env, uint64_t offs) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->length, 1, results, 1, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->length, 1, results, 1, params));
   return results[0].of.i64;
 }
 
@@ -53,19 +55,16 @@ void k_output_set(wasm_exec_env_t env, uint64_t offs, uint64_t length) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
                          {.kind = WASM_I64, .of = {.i64 = length}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->output_set, 0, NULL, 2, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->output_set, 0, NULL, 2, params));
 }
 
 uint64_t k_output_length(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->output_length, 1, results, 0,
-                                  NULL));
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->output_length, 1, results,
+                                       0, NULL));
   return results[0].of.i64;
 }
 
@@ -73,11 +72,8 @@ uint64_t k_output_offset(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->output_length, 1, results, 0,
-                                  NULL));
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->output_length, 1, results,
+                                       0, NULL));
   return results[0].of.i64;
 }
 
@@ -86,22 +82,16 @@ void k_input_set(wasm_exec_env_t env, uint64_t offs, uint64_t length) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
                          {.kind = WASM_I64, .of = {.i64 = length}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->input_set, 0, NULL, 2, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->input_set, 0, NULL, 2, params));
 }
 
 uint64_t k_input_length(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  if (!wasm_runtime_call_wasm_a(env, kernel->input_length, 1, results, 0,
-                                NULL)) {
-    puts(wasm_runtime_get_exception(kernel->instance));
-    return 0;
-  }
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->input_length, 1, results, 0, NULL));
   return results[0].of.i64;
 }
 
@@ -109,10 +99,8 @@ uint64_t k_input_offset(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(
+  KERNEL_CALL(
       wasm_runtime_call_wasm_a(env, kernel->input_length, 1, results, 0, NULL));
-  use_plugin(plugin, env);
   return results[0].of.i64;
 }
 
@@ -121,12 +109,8 @@ uint32_t k_load_u8(wasm_exec_env_t env, uint64_t offs) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
-  use_kernel(plugin, env);
-  if (!wasm_runtime_call_wasm_a(env, kernel->load_u8, 1, results, 1, params)) {
-    puts(wasm_runtime_get_exception(kernel->instance));
-    return 0;
-  }
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->load_u8, 1, results, 1, params));
   return results[0].of.i32;
 }
 
@@ -135,13 +119,8 @@ uint32_t k_input_load_u8(wasm_exec_env_t env, uint64_t offs) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
-  use_kernel(plugin, env);
-  if (!wasm_runtime_call_wasm_a(env, kernel->input_load_u8, 1, results, 1,
-                                params)) {
-    puts(wasm_runtime_get_exception(kernel->instance));
-    return 0;
-  }
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->input_load_u8, 1, results,
+                                       1, params));
   return results[0].of.i32;
 }
 
@@ -150,10 +129,8 @@ uint64_t k_load_u64(wasm_exec_env_t env, uint64_t offs) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(
+  KERNEL_CALL(
       wasm_runtime_call_wasm_a(env, kernel->load_u64, 1, results, 1, params));
-  use_plugin(plugin, env);
   return results[0].of.i64;
 }
 
@@ -162,10 +139,8 @@ uint32_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->input_load_u64, 1, results, 1,
-                                  params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->input_load_u64, 1, results,
+                                       1, params));
   return results[0].of.i64;
 }
 
@@ -174,9 +149,8 @@ void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
                          {.kind = WASM_I32, .of = {.i32 = ch}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->store_u8, 0, NULL, 2, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->store_u8, 0, NULL, 2, params));
 }
 
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v) {
@@ -184,18 +158,16 @@ void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v) {
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
                          {.kind = WASM_I64, .of = {.i64 = v}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->store_u64, 0, NULL, 2, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->store_u64, 0, NULL, 2, params));
 }
 
 uint64_t k_error_get(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->error_get, 1, results, 0, NULL));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->error_get, 1, results, 0, NULL));
   return results[0].of.i64;
 }
 
@@ -203,9 +175,8 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  use_kernel(plugin, env);
-  assert(wasm_runtime_call_wasm_a(env, kernel->error_get, 0, NULL, 1, params));
-  use_plugin(plugin, env);
+  KERNEL_CALL(
+      wasm_runtime_call_wasm_a(env, kernel->error_get, 0, NULL, 1, params));
 }
 
 static wasm_module_t load_extism_kernel() {
