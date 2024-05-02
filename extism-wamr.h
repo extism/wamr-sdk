@@ -32,7 +32,6 @@ typedef struct {
 struct ExtismKernel {
   wasm_module_t module;
   wasm_module_inst_t instance;
-  wasm_exec_env_t exec;
   wasm_function_inst_t alloc;
   wasm_function_inst_t free;
   wasm_function_inst_t length;
