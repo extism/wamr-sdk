@@ -70,9 +70,7 @@ uint32_t k_http_status_code(wasm_exec_env_t env);
 
 void plugin_set_error(ExtismPlugin *plugin, const char *s);
 
-void use_kernel(ExtismPlugin *plugin);
-void use_plugin(ExtismPlugin *plugin);
 #define WITH_KERNEL(plugin, x)                                                 \
-  use_kernel(plugin);                                                          \
+  extism_plugin_use_kernel(plugin);                                            \
   x;                                                                           \
-  use_plugin(plugin);
+  extism_plugin_use_plugin(plugin);

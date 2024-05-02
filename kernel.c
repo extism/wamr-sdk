@@ -12,7 +12,7 @@
     if (!x) {                                                                  \
       const char *s = wasm_runtime_get_exception(kernel->instance);            \
       plugin_set_error(plugin, s);                                             \
-      use_plugin(plugin);                                                      \
+      extism_plugin_use_plugin(plugin);                                        \
       wasm_runtime_set_exception(plugin->instance, s);                         \
       wasm_runtime_terminate(plugin->instance);                                \
     }                                                                          \
@@ -282,4 +282,8 @@ void init_kernel(struct ExtismKernel *kernel) {
   // End kernel functions
 
 #undef KERNEL_FN
+}
+
+void *extism_host_function_data(ExtismExecEnv *env) {
+  return wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
 }
