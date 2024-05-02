@@ -4,6 +4,7 @@
 #include "lib_export.h"
 
 #include <stdio.h>
+#include <wasm_export.h>
 
 // KERNEL_CALL depends on `plugin` and `kernel` variables
 #define KERNEL_CALL(x)                                                         \
@@ -179,6 +180,32 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
       wasm_runtime_call_wasm_a(env, kernel->error_get, 0, NULL, 1, params));
 }
 
+uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) { return 0; }
+uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) { return 0; }
+void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) { return; }
+uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
+  return 0;
+}
+uint32_t k_http_status_code(wasm_exec_env_t env) { return 0; }
+
+#define LOG_FN(name, prefix)                                                   \
+  void k_log_##name(wasm_exec_env_t env, uint64_t msg) {                       \
+    ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);          \
+    uint64_t len = k_length(env, msg);                                         \
+    void *ptr;                                                                 \
+    WITH_KERNEL(plugin, {                                                      \
+      ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, msg);     \
+    });                                                                        \
+    fputs(prefix ": ", stderr);                                                \
+    fwrite(ptr, len, 1, stderr);                                               \
+    fputs("\n", stderr);                                                       \
+  }
+
+LOG_FN(info, "INFO");
+LOG_FN(warn, "WARN");
+LOG_FN(debug, "DEBUG");
+LOG_FN(error, "ERROR");
+
 static wasm_module_t load_extism_kernel() {
   char errormsg[2048];
   wasm_module_t module = wasm_runtime_load(
@@ -225,27 +252,4 @@ void init_kernel(struct ExtismKernel *kernel) {
   // End kernel functions
 
 #undef KERNEL_FN
-}
-
-void link_kernel(ExtismPlugin *plugin) {
-  // Link kernel functions into environment
-#define FN(name, args)                                                         \
-  {.symbol = #name,                                                            \
-   .signature = args,                                                          \
-   .func_ptr = k_##name,                                                       \
-   .attachment = plugin}
-  NativeSymbol kernel[] = {
-      FN(alloc, "(I)I"),        FN(free, "(I)"),
-      FN(output_set, "(II)"),   FN(output_length, "()I"),
-      FN(output_offset, "()I"), FN(input_set, "(I, I)"),
-      FN(input_length, "()I"),  FN(input_offset, "()I"),
-      FN(load_u8, "(I)i"),      FN(input_load_u8, "(I)i"),
-      FN(load_u64, "(I)I"),     FN(input_load_u64, "(I)I"),
-      FN(store_u8, "(Ii)"),     FN(store_u64, "(II)"),
-      FN(error_set, "(I)"),     FN(error_get, "()I"),
-      FN(length, "(I)I"),       FN(reset, "()"),
-  };
-#undef FN
-  size_t nkernel = sizeof(kernel) / sizeof(NativeSymbol);
-  wasm_runtime_register_natives("extism:host/env", kernel, nkernel);
 }

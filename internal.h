@@ -58,6 +58,15 @@ void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch);
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v);
 uint64_t k_error_get(wasm_exec_env_t env);
 void k_error_set(wasm_exec_env_t env, uint64_t offs);
+void k_log_warn(wasm_exec_env_t env, uint64_t msg);
+void k_log_info(wasm_exec_env_t env, uint64_t msg);
+void k_log_debug(wasm_exec_env_t env, uint64_t msg);
+void k_log_error(wasm_exec_env_t env, uint64_t msg);
+uint64_t k_config_get(wasm_exec_env_t env, uint64_t k);
+uint64_t k_var_get(wasm_exec_env_t env, uint64_t k);
+void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v);
+uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body);
+uint32_t k_http_status_code(wasm_exec_env_t env);
 
 void plugin_set_error(ExtismPlugin *plugin, const char *s);
 
