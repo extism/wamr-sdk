@@ -268,3 +268,13 @@ const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length) {
   }
   return wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
 }
+
+void extism_host_function(const char *module, const char *name,
+                          const char *signature, void *func, void *user_data) {
+  NativeSymbol f;
+  f.symbol = name;
+  f.attachment = user_data;
+  f.func_ptr = func;
+  f.signature = signature;
+  wasm_runtime_register_natives(module, &f, 1);
+}
