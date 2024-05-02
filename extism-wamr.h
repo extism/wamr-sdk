@@ -65,10 +65,23 @@ const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length);
 void extism_host_function(const char *module, const char *name,
                           const char *signature, void *func, void *user_data);
 
+// Get host pointer
+void *extism_plugin_memory(ExtismPlugin *plugin, uint64_t offs);
+
+// Allocate Extism memory
+uint64_t extism_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
+                                    size_t size);
+
+// Get length of allocation in Extism memory
+uint64_t extism_plugin_memory_length(ExtismPlugin *plugin, uint64_t offs);
+
+// Allocate Extism memory
+void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs);
+
 // Get user-data from host functions
 void *extism_host_function_data(ExtismExecEnv *env);
 
-void extism_plugin_use_kernel(ExtismPlugin *plugin);
-void extism_plugin_use_plugin(ExtismPlugin *plugin);
+void extism_plugin_use_kernel(ExtismPlugin *);
+void extism_plugin_use_plugin(ExtismPlugin *);
 
 #endif // _EXTISM_WAMR_H

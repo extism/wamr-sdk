@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <wasm_export.h>
 
 void extism_plugin_use_kernel(ExtismPlugin *plugin) {
   wasm_runtime_set_module_inst(plugin->exec, plugin->kernel.instance);
@@ -278,4 +279,32 @@ void extism_host_function(const char *module, const char *name,
   f.func_ptr = func;
   f.signature = signature;
   wasm_runtime_register_natives(module, &f, 1);
+}
+
+// Get host pointer
+void *extism_plugin_memory(ExtismPlugin *plugin, uint64_t offs) {
+  void *ptr = NULL;
+  WITH_KERNEL(plugin, {
+    ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
+  });
+  return ptr;
+}
+
+// Allocate Extism memory
+uint64_t extism_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
+                                    size_t size) {
+  return plugin_alloc(plugin, data, size);
+}
+
+// Get length of allocation in Extism memory
+uint64_t extism_plugin_memory_length(ExtismPlugin *plugin, uint64_t offs) {
+  return plugin_length(plugin, offs);
+}
+
+// Allocate Extism memory
+void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs) {
+  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
+  WITH_KERNEL(plugin,
+              wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.length, 0,
+                                       NULL, 1, params));
 }
