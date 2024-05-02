@@ -17,7 +17,7 @@ typedef enum {
 typedef struct {
   char *name;
   uint8_t *data;
-  size_t data_length;
+  size_t length;
 } ExtismWasm;
 
 typedef struct {
@@ -26,7 +26,6 @@ typedef struct {
 } ExtismManifest;
 
 struct ExtismKernel;
-struct ExtismPlugin;
 typedef struct ExtismPlugin ExtismPlugin;
 
 void extism_runtime_init();

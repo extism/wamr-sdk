@@ -1,4 +1,4 @@
-#include "extism-wamr.h"
+#include "../extism-wamr.h"
 
 #include <stdio.h>
 
@@ -11,7 +11,7 @@ int main(void) {
 
   ExtismManifest manifest = {.wasm = {{
                                  .data = ___wasm,
-                                 .data_length = ___wasm_len,
+                                 .length = ___wasm_len,
                                  .name = NULL,
                              }},
                              .wasm_count = 1};

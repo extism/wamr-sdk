@@ -60,13 +60,12 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
     if (manifest->wasm[i].name != NULL) {
       LoadArgs args;
       args.name = manifest->wasm[i].name;
-      plugin->modules[i] = wasm_runtime_load_ex(manifest->wasm[i].data,
-                                                manifest->wasm[i].data_length,
-                                                &args, errmsg, errlen);
-    } else {
       plugin->modules[i] =
-          wasm_runtime_load(manifest->wasm[i].data,
-                            manifest->wasm[i].data_length, errmsg, errlen);
+          wasm_runtime_load_ex(manifest->wasm[i].data, manifest->wasm[i].length,
+                               &args, errmsg, errlen);
+    } else {
+      plugin->modules[i] = wasm_runtime_load(
+          manifest->wasm[i].data, manifest->wasm[i].length, errmsg, errlen);
       plugin->main = plugin->modules[i];
     }
   }
