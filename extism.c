@@ -1,4 +1,3 @@
-#include "extism-wamr.h"
 #include "internal.h"
 
 #include <stdio.h>
@@ -28,9 +27,8 @@ static void extism_kernel_cleanup(struct ExtismKernel *kernel) {
 void extism_runtime_cleanup() { wasm_runtime_destroy(); }
 
 static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
-                                       const ExtismManifest *manifest) {
-  char errmsg[1024];
-
+                                       const ExtismManifest *manifest,
+                                       char *errmsg, size_t errlen) {
   plugin->module_count = manifest->wasm_count;
   plugin->exec = NULL;
   plugin->instance = NULL;
@@ -61,15 +59,16 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   wasm_runtime_register_natives("extism:host/env", kernel, nkernel);
 
   for (size_t i = 0; i < plugin->module_count; i++) {
-    if (i < plugin->module_count - 1) {
+    if (manifest->wasm[i].name != NULL) {
       LoadArgs args;
       args.name = manifest->wasm[i].name;
       plugin->modules[i] = wasm_runtime_load_ex(manifest->wasm[i].data,
                                                 manifest->wasm[i].data_length,
-                                                &args, errmsg, 1024);
+                                                &args, errmsg, errlen);
     } else {
-      plugin->modules[i] = wasm_runtime_load(
-          manifest->wasm[i].data, manifest->wasm[i].data_length, errmsg, 1024);
+      plugin->modules[i] =
+          wasm_runtime_load(manifest->wasm[i].data,
+                            manifest->wasm[i].data_length, errmsg, errlen);
       plugin->main = plugin->modules[i];
     }
   }
@@ -80,7 +79,7 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 
   // TODO: make memory settings configurable
   plugin->instance =
-      wasm_runtime_instantiate(plugin->main, 4096, 65536 * 10, errmsg, 1024);
+      wasm_runtime_instantiate(plugin->main, 4096, 65536 * 10, errmsg, errlen);
   plugin->exec = wasm_exec_env_create(plugin->instance, 4096);
 
   return ExtismStatusOk;
@@ -102,9 +101,10 @@ static void extism_plugin_cleanup(ExtismPlugin *plugin) {
   }
 }
 
-ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest) {
+ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
+                                size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
-  if (extism_plugin_init(plugin, manifest) != ExtismStatusOk) {
+  if (extism_plugin_init(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
     return NULL;
   }
   return plugin;

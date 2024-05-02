@@ -14,7 +14,7 @@ int main(void) {
                              }},
                              .wasm_count = 1};
 
-  ExtismPlugin *plugin = extism_plugin_new(&manifest);
+  ExtismPlugin *plugin = extism_plugin_new(&manifest, NULL, 0);
 
   puts("CALLING");
   extism_plugin_call(plugin, "count_vowels", "abc", 3);

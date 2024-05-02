@@ -32,7 +32,8 @@ typedef struct ExtismPlugin ExtismPlugin;
 void extism_runtime_init();
 void extism_runtime_cleanup();
 
-ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest);
+ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errbuf,
+                                size_t errlen);
 void extism_plugin_free(ExtismPlugin *plugin);
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
                                 void *input, size_t input_length);
