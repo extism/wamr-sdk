@@ -95,8 +95,6 @@ static void native_reset(wasm_exec_env_t env, uint64_t size) {
   puts("FN: RESET");
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = size}}};
-  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
   use_kernel(plugin, env);
   assert(wasm_runtime_call_wasm_a(env, kernel->reset, 0, NULL, 0, NULL));
   use_plugin(plugin, env);
@@ -332,11 +330,10 @@ ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
       FN(load_u64, "(I)I"),     FN(input_load_u64, "(I)I"),
       FN(store_u8, "(Ii)"),     FN(store_u64, "(II)"),
       FN(error_set, "(I)"),     FN(error_get, "()I"),
-      FN(length, "(I)I"),
+      FN(length, "(I)I"),       FN(reset, "()"),
   };
 #undef FN
-
-  size_t nkernel = 17;
+  size_t nkernel = sizeof(kernel) / sizeof(NativeSymbol);
 
   wasm_runtime_register_natives("extism:host/env", kernel, nkernel);
 
