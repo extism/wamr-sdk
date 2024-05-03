@@ -30,3 +30,8 @@ make
 ## Example
 
 See [extism-wamr.c](bin/extism-wamr.c)
+
+## Notes
+
+- `extism_runtime_init` should always be called before creating any plugins, and there
+  is only a single global runtime that host functions can be loaded into

@@ -1,3 +1,4 @@
+.PHONY: build
 build: extism-wamr
 	mkdir -p build && cd build && cmake .. && $(MAKE)
 	cp build/libextism-wamr.a .

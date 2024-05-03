@@ -1,7 +1,6 @@
 #include "extism-wamr.h"
 #include "internal.h"
 
-#include <stdio.h>
 #include <string.h>
 
 static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};

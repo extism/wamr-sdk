@@ -86,7 +86,6 @@ int main(int argc, char *argv[]) {
     } else {
       // Otherwise print the output
       uint8_t *output = extism_plugin_output(plugin, &len);
-      printf("Output length=%ld\n", len);
       fwrite(output, len, 1, stdout);
       fputc('\n', stdout);
     }

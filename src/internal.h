@@ -1,7 +1,7 @@
 #pragma once
 #include "extism-wamr.h"
 
-#include "../common/wasm_exec_env.h"
+#include "../wasm-micro-runtime/core/iwasm/common/wasm_exec_env.h"
 #include "wasm_export.h"
 
 #include <assert.h>

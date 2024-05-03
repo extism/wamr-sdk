@@ -63,10 +63,12 @@ typedef struct ExtismPlugin ExtismPlugin;
 struct ExtismExecEnv;
 typedef struct ExtismExecEnv ExtismExecEnv;
 
-// Initiailze runtime, this must be called before anything else
+// Initiailze runtime, this must be called before anything else and only one
+// runtime can be initialized at a time
 void extism_runtime_init();
 
-// Cleanup runtime initialized with `extism_runtime_init`
+// Cleanup runtime initialized with `extism_runtime_init`, this cleans up
+// associated memory and unloads any host functions
 void extism_runtime_cleanup();
 
 // Create a new plugin from a manifest, the `errbuf` is used to access any error
