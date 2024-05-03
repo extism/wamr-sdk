@@ -3,7 +3,7 @@ project(extism-wamr)
 
 enable_testing()
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 
 # Configure WAMR
 
@@ -20,7 +20,7 @@ set (WAMR_BUILD_LIBC_WASI 1)
 set (WAMR_BUILD_TAIL_CALL 1)
 set (WAMR_BUILD_MULTI_MODULE 1)
 set (WAMPR_BUILD_GC 1)
-# set (WAMR_BUILD_SIMD 1)
+set (WAMR_BUILD_SIMD 1)
 # set (WAMR_BUILD_AOT 1)
 set (WAMR_ROOT_DIR wasm-micro-runtime)
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
@@ -40,11 +40,16 @@ install(TARGETS extism-wamr
   PUBLIC_HEADER DESTINATION "include"
 )
 
-add_executable(test-example example/example.c)
-target_link_libraries(test-example extism-wamr)
+add_executable(extism-wamr-exe bin/extism-wamr.c)
+set_target_properties(extism-wamr-exe PROPERTIES OUTPUT_NAME "extism-wamr")
+target_link_libraries(extism-wamr-exe extism-wamr)
 add_test(
-    NAME test-example 
-    COMMAND test-example ./example/count-vowels.wasm count_vowels aaa
+    NAME extism-wamr-exe 
+    COMMAND extism-wamr-exe ./wasm/count-vowels.wasm count_vowels aaa
 )
+install(TARGETS extism-wamr-exe
+  RUNTIME DESTINATION "bin"
+)
+
 
 

@@ -7,4 +7,5 @@ CMakeFiles
 Makefile
 *.cmake
 Testing
-test-example
+extism-wamr
+test_wrgsbase.c

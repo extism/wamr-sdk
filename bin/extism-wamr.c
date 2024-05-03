@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
   char errbuf[1024];
 
   if (argc < 4) {
+    fprintf(stderr, "Usage: %s <wasm file> <function name> <input>", argv[0]);
     return 1;
   }
 
