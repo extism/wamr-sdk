@@ -103,12 +103,12 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 
   plugin->exec = wasm_exec_env_create(plugin->instance, 4096);
 
-  // TODO: initialize WASI
-
   // wasm_function_inst_t initialize =
   //     wasm_runtime_lookup_function(plugin->instance, "_initialize");
   // if (initialize != NULL) {
-  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, NULL, 0, NULL);
+  //   wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
+  //                          {.kind = WASM_I32, .of = {.i32 = 0}}};
+  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, params, 0, params);
   // }
 
   // wasm_function_inst_t hs_init =
@@ -118,6 +118,8 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   //                          {.kind = WASM_I32, .of = {.i32 = 0}}};
   //   wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
   // }
+
+  // TODO: initialize WASI
 
   return ExtismStatusOk;
 }
@@ -236,6 +238,7 @@ static void plugin_reset(ExtismPlugin *plugin) {
 
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
                                 void *input, size_t input_length) {
+
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {
@@ -253,7 +256,7 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
   extism_plugin_use_plugin(plugin);
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
-    plugin_set_error(plugin, "Call failed");
+    plugin_set_error(plugin, wasm_runtime_get_exception(plugin->instance));
     return ExtismStatusCallFailed;
   }
 
