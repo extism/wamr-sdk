@@ -9,3 +9,4 @@ Testing
 extism-wamr
 test_wrgsbase.c
 build
+extism-runtime.wasm
