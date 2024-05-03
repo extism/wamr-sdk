@@ -84,6 +84,6 @@ struct Symbols {
   size_t length, capacity;
 };
 
-void symbols_init(struct Symbols *symbols, size_t total);
-NativeSymbol *symbols_add(struct Symbols *s, const NativeSymbol *sym);
-void symbols_reset(struct Symbols *s);
+void init_symbols(struct Symbols *symbols, size_t total);
+NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym, size_t n);
+void reset_symbols(struct Symbols *s);

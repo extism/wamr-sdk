@@ -58,7 +58,8 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 #undef FN
   size_t nkernel = sizeof(kernel) / sizeof(NativeSymbol);
 
-  wasm_runtime_register_natives("extism:host/env", kernel, nkernel);
+  wasm_runtime_register_natives(
+      "extism:host/env", add_symbols(&SYMBOLS, kernel, nkernel), nkernel);
 
   for (size_t i = 0; i < plugin->module_count; i++) {
     if (manifest->wasm[i].name != NULL) {
@@ -280,7 +281,7 @@ void extism_host_function(const char *module, const char *name,
   f.attachment = user_data;
   f.func_ptr = func;
   f.signature = signature;
-  wasm_runtime_register_natives(module, symbols_add(&SYMBOLS, &f), 1);
+  wasm_runtime_register_natives(module, add_symbols(&SYMBOLS, &f, 1), 1);
 }
 
 // Get host pointer
@@ -332,11 +333,11 @@ void extism_plugin_use_plugin(ExtismPlugin *plugin) {
 }
 
 void extism_runtime_init() {
-  symbols_init(&SYMBOLS, 64);
+  init_symbols(&SYMBOLS, 64);
   wasm_runtime_init();
 }
 
 void extism_runtime_cleanup() {
   wasm_runtime_destroy();
-  symbols_reset(&SYMBOLS);
+  reset_symbols(&SYMBOLS);
 }
