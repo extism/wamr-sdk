@@ -3,5 +3,8 @@ build: extism-wamr
 	cp build/libextism-wamr.a .
 	cp build/extism-wamr .
 
+clean:
+	rm -rf ./build
+
 extism-wamr:
 	git submodule update --init
