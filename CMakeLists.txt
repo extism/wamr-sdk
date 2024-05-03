@@ -4,6 +4,7 @@ project(extism-wamr)
 enable_testing()
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
 # Configure WAMR
 
@@ -30,6 +31,11 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
  
 add_library (extism-wamr STATIC src/symbols.c src/kernel.c src/extism.c)
 target_link_libraries (extism-wamr vmlib m)
+if(MSVC)
+  target_compile_options(extism-wamr PRIVATE /W4 /WX)
+else()
+  target_compile_options(extism-wamr PRIVATE -Wall -Wextra -Werror)
+endif()
 
 # Install
 

@@ -286,10 +286,10 @@ uint32_t k_http_status_code(wasm_exec_env_t env) {
     fputs("\n", stderr);                                                       \
   }
 
-LOG_FN(info, "INFO");
-LOG_FN(warn, "WARN");
-LOG_FN(debug, "DEBUG");
-LOG_FN(error, "ERROR");
+LOG_FN(info, "INFO")
+LOG_FN(warn, "WARN")
+LOG_FN(debug, "DEBUG")
+LOG_FN(error, "ERROR")
 
 static wasm_module_t load_extism_kernel() {
   char errormsg[2048];
