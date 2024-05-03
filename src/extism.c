@@ -2,6 +2,7 @@
 #include "internal.h"
 
 #include <string.h>
+#include <wasm_export.h>
 
 static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
 
@@ -267,6 +268,14 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
   }
 
   return ExtismStatusOk;
+}
+
+ExtismStatus extism_plugin_exec(ExtismPlugin *plugin, const char *func_name,
+                                void *input, size_t input_length, char **argv,
+                                int argc) {
+  wasm_runtime_set_wasi_args(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
+                             argc);
+  return extism_plugin_call(plugin, func_name, input, input_length);
 }
 
 uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length) {
