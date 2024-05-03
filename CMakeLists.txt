@@ -3,7 +3,7 @@ project(extism-wamr)
 
 enable_testing()
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
 
 # Configure WAMR
 
@@ -28,12 +28,12 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
 # extism-wamr
  
-add_library (extism-wamr STATIC symbols.c kernel.c extism.c)
+add_library (extism-wamr STATIC src/symbols.c src/kernel.c src/extism.c)
 target_link_libraries (extism-wamr vmlib m)
 
 # Install
 
-set_target_properties(extism-wamr PROPERTIES PUBLIC_HEADER "extism-wamr.h")
+set_target_properties(extism-wamr PROPERTIES PUBLIC_HEADER "src/extism-wamr.h")
 
 install(TARGETS extism-wamr
   LIBRARY DESTINATION "lib"
@@ -45,7 +45,7 @@ set_target_properties(extism-wamr-exe PROPERTIES OUTPUT_NAME "extism-wamr")
 target_link_libraries(extism-wamr-exe extism-wamr)
 add_test(
     NAME extism-wamr-exe 
-    COMMAND extism-wamr-exe ./wasm/count-vowels.wasm count_vowels aaa
+    COMMAND extism-wamr-exe ${PROJECT_SOURCE_DIR}/wasm/count-vowels.wasm count_vowels aaa
 )
 install(TARGETS extism-wamr-exe
   RUNTIME DESTINATION "bin"

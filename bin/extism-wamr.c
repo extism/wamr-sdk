@@ -1,4 +1,4 @@
-#include "../extism-wamr.h"
+#include "../src/extism-wamr.h"
 
 #include <assert.h>
 #include <stdio.h>
