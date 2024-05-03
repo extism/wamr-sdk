@@ -44,7 +44,7 @@ add_executable(test-example example/example.c)
 target_link_libraries(test-example extism-wamr)
 add_test(
     NAME test-example 
-    COMMAND test-example
+    COMMAND test-example ./example/count-vowels.wasm count_vowels aaa
 )
 
 
