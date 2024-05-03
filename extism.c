@@ -1,9 +1,8 @@
+#include "extism-wamr.h"
 #include "internal.h"
-#include "wasm-micro-runtime/core/iwasm/common/wasm_exec_env.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <wasm_export.h>
 
 static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
 
@@ -18,7 +17,7 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   plugin->var_count = 0;
 
   // Initialize kernel
-  init_kernel(&plugin->kernel);
+  init_kernel(&plugin->kernel, &manifest->memory);
 
 #define FN(name, args)                                                         \
   {.symbol = #name,                                                            \
@@ -62,7 +61,10 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
       "extism:host/env", add_symbols(&SYMBOLS, kernel, nkernel), nkernel);
 
   for (size_t i = 0; i < plugin->module_count; i++) {
-    if (manifest->wasm[i].name != NULL) {
+    bool name_is_null = manifest->wasm[i].name == NULL;
+    bool name_is_main = (!name_is_null && strlen(manifest->wasm[i].name) == 4 &&
+                         strncmp(manifest->wasm[i].name, "main", 4) == 0);
+    if (!name_is_null && !name_is_main) {
       LoadArgs args;
       args.name = manifest->wasm[i].name;
       plugin->modules[i] =
@@ -79,11 +81,12 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
     return ExtismStatusErrNoWasm;
   }
 
-  // TODO: make memory settings configurable
-  plugin->instance =
-      wasm_runtime_instantiate(plugin->main, 4096, 65536 * 10, errmsg, errlen);
+  plugin->instance = wasm_runtime_instantiate(
+      plugin->main, (manifest->memory.stack_size) / 4 * 3,
+      (manifest->memory.heap_size / 4) * 3, errmsg, errlen);
 
-  plugin->exec = wasm_exec_env_create(plugin->instance, 4096);
+  plugin->exec =
+      wasm_exec_env_create(plugin->instance, manifest->memory.stack_size);
 
   // wasm_function_inst_t initialize =
   //     wasm_runtime_lookup_function(plugin->instance, "_initialize");
@@ -314,7 +317,15 @@ void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs) {
 
 void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
                           size_t nwasm, const ExtismConfig *config,
-                          size_t nconfig) {
+                          size_t nconfig, const ExtismMemoryConfig *memory) {
+  if (memory) {
+    manifest->memory.stack_size = memory->stack_size;
+    manifest->memory.heap_size = memory->heap_size;
+  } else {
+    manifest->memory.stack_size = 8092;
+    manifest->memory.heap_size = 65536 * 10;
+  }
+
   assert(nwasm <= EXTISM_MAX_LINKED_MODULES);
   memcpy(manifest->wasm, wasm, nwasm * sizeof(ExtismWasm));
   manifest->wasm_count = nwasm;

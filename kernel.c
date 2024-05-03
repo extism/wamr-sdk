@@ -304,12 +304,13 @@ static wasm_module_t load_extism_kernel() {
   return module;
 }
 
-void init_kernel(struct ExtismKernel *kernel) {
+void init_kernel(struct ExtismKernel *kernel,
+                 const ExtismMemoryConfig *memory) {
   kernel->module = load_extism_kernel();
   // TODO: base the memory kernel size off of the total memory size once that
   // becomes configurable
-  kernel->instance =
-      wasm_runtime_instantiate(kernel->module, 4096, 65536 * 10, NULL, 0);
+  kernel->instance = wasm_runtime_instantiate(
+      kernel->module, memory->stack_size / 4, memory->heap_size / 4, NULL, 0);
 
   // Kernel functions
 #define KERNEL_FN(x)                                                           \

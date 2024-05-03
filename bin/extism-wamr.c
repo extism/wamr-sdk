@@ -49,14 +49,15 @@ int main(int argc, char *argv[]) {
 
   // Specify the modules to be loaded, setting `name` to `NULL` marks a module
   // at the main module
-  ExtismManifest manifest;
   ExtismWasm wasm = {
       .data = data,
       .length = datalen,
       .name = NULL,
   };
-  extism_manifest_init(&manifest, &wasm, 1, NULL, 0);
+  ExtismManifest manifest;
+  extism_manifest_init(&manifest, &wasm, 1, NULL, 0, NULL);
 
+  // Host functions
   extism_host_function("extism:host/user", "host_reflect", "(I)I", host_reflect,
                        NULL);
 
@@ -71,8 +72,10 @@ int main(int argc, char *argv[]) {
 
   // Call `count_vowels` function
   ExtismStatus status;
+  const char *env = getenv("EXTISM_WAMR_LOOP");
+  int loop = atoi(env == NULL ? "1" : env);
 
-  for (size_t i = 0; i < 10; i++) {
+  for (int i = 0; i < loop; i++) {
     if ((status = extism_plugin_call(plugin, argv[2], argv[3],
                                      strlen(argv[3]))) != ExtismStatusOk) {
       // Print error if it fails

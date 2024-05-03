@@ -40,16 +40,22 @@ typedef struct {
 } ExtismVar;
 
 typedef struct {
+  uint32_t stack_size;
+  size_t heap_size;
+} ExtismMemoryConfig;
+
+typedef struct {
   // Wasm modules
   ExtismWasm wasm[EXTISM_MAX_LINKED_MODULES];
   ExtismConfig config[EXTISM_MAX_CONFIG];
   // Number of modules
   size_t wasm_count, config_count;
+  ExtismMemoryConfig memory;
 } ExtismManifest;
 
 void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
                           size_t nwasm, const ExtismConfig *config,
-                          size_t nconfig);
+                          size_t nconfig, const ExtismMemoryConfig *memory);
 
 struct ExtismKernel;
 typedef struct ExtismPlugin ExtismPlugin;
