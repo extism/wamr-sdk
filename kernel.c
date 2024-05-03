@@ -182,9 +182,23 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
 
 uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
-  wasm_runtime_set_exception(plugin->instance,
-                             "extism:host/env::config_get not implemented");
-  wasm_runtime_terminate(plugin->instance);
+  uint64_t len = k_length(env, k);
+  if (len == 0) {
+    return 0;
+  }
+
+  void *ptr;
+  WITH_KERNEL(plugin, {
+    ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, k);
+  });
+
+  for (size_t i = 0; i < plugin->manifest->config_count; i++) {
+    if (strncmp(plugin->manifest->config[i].key, ptr, len) == 0) {
+      return plugin_alloc(plugin, plugin->manifest->config[i].value,
+                          strlen(plugin->manifest->config[i].value));
+    }
+  }
+
   return 0;
 }
 uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
@@ -222,6 +236,8 @@ uint32_t k_http_status_code(wasm_exec_env_t env) {
   void k_log_##name(wasm_exec_env_t env, uint64_t msg) {                       \
     ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);          \
     uint64_t len = k_length(env, msg);                                         \
+    if (len == 0)                                                              \
+      return;                                                                  \
     void *ptr;                                                                 \
     WITH_KERNEL(plugin, {                                                      \
       ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, msg);     \

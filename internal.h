@@ -30,6 +30,9 @@ struct ExtismKernel {
 };
 
 typedef struct ExtismPlugin {
+  ExtismKeyValue vars[EXTISM_MAX_CONFIG];
+  size_t var_count;
+  const ExtismManifest *manifest;
   struct ExtismKernel kernel;
   wasm_module_t modules[EXTISM_MAX_LINKED_MODULES];
   wasm_module_t main;
@@ -69,6 +72,7 @@ uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body);
 uint32_t k_http_status_code(wasm_exec_env_t env);
 
 void plugin_set_error(ExtismPlugin *plugin, const char *s);
+uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size);
 
 #define WITH_KERNEL(plugin, x)                                                 \
   extism_plugin_use_kernel(plugin);                                            \

@@ -16,6 +16,7 @@ typedef enum {
 // Determines the maximum number of modules that can be specified in a manifest
 // at once
 #define EXTISM_MAX_LINKED_MODULES 8
+#define EXTISM_MAX_CONFIG 32
 
 // `ExtismWasm` is used to specify Wasm data when creating plugins
 typedef struct {
@@ -28,10 +29,16 @@ typedef struct {
 } ExtismWasm;
 
 typedef struct {
+  const char *key;
+  const char *value;
+} ExtismKeyValue;
+
+typedef struct {
   // Wasm modules
   ExtismWasm wasm[EXTISM_MAX_LINKED_MODULES];
+  ExtismKeyValue config[EXTISM_MAX_CONFIG];
   // Number of modules
-  size_t wasm_count;
+  size_t wasm_count, config_count;
 } ExtismManifest;
 
 struct ExtismKernel;
