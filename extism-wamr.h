@@ -47,6 +47,10 @@ typedef struct {
   size_t wasm_count, config_count;
 } ExtismManifest;
 
+void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
+                          size_t nwasm, const ExtismConfig *config,
+                          size_t nconfig);
+
 struct ExtismKernel;
 typedef struct ExtismPlugin ExtismPlugin;
 

@@ -216,7 +216,7 @@ uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
   for (size_t i = 0; i < plugin->var_count; i++) {
     if (strncmp(plugin->vars[i].key, ptr, len) == 0) {
       return plugin_alloc(plugin, plugin->vars[i].value,
-                          strlen(plugin->vars[i].value));
+                          plugin->vars[i].length);
     }
   }
 

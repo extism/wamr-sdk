@@ -5,27 +5,6 @@
 #include <string.h>
 #include <wasm_export.h>
 
-void extism_plugin_use_kernel(ExtismPlugin *plugin) {
-  wasm_runtime_set_module_inst(plugin->exec, plugin->kernel.instance);
-}
-
-void extism_plugin_use_plugin(ExtismPlugin *plugin) {
-  wasm_runtime_set_module_inst(plugin->exec, plugin->instance);
-}
-
-void extism_runtime_init() { wasm_runtime_init(); }
-
-static void extism_kernel_cleanup(struct ExtismKernel *kernel) {
-  if (kernel->instance) {
-    wasm_runtime_deinstantiate(kernel->instance);
-  }
-  if (kernel->module) {
-    wasm_runtime_unload(kernel->module);
-  }
-}
-
-void extism_runtime_cleanup() { wasm_runtime_destroy(); }
-
 static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
                                        const ExtismManifest *manifest,
                                        char *errmsg, size_t errlen) {
@@ -119,9 +98,28 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   //   wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
   // }
 
-  // TODO: initialize WASI
+  // TODO: initialize WASI?
 
   return ExtismStatusOk;
+}
+
+ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
+                                size_t errlen) {
+  ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
+  if (extism_plugin_init(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
+    extism_plugin_free(plugin);
+    return NULL;
+  }
+  return plugin;
+}
+
+static void cleanup_kernel(struct ExtismKernel *kernel) {
+  if (kernel->instance) {
+    wasm_runtime_deinstantiate(kernel->instance);
+  }
+  if (kernel->module) {
+    wasm_runtime_unload(kernel->module);
+  }
 }
 
 static void extism_plugin_cleanup(ExtismPlugin *plugin) {
@@ -137,17 +135,7 @@ static void extism_plugin_cleanup(ExtismPlugin *plugin) {
     wasm_runtime_unload(plugin->modules[i]);
   }
 
-  extism_kernel_cleanup(&plugin->kernel);
-}
-
-ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
-                                size_t errlen) {
-  ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
-  if (extism_plugin_init(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
-    extism_plugin_free(plugin);
-    return NULL;
-  }
-  return plugin;
+  cleanup_kernel(&plugin->kernel);
 }
 
 void extism_plugin_free(ExtismPlugin *plugin) {
@@ -320,3 +308,27 @@ void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs) {
               wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.length, 0,
                                        NULL, 1, params));
 }
+
+void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
+                          size_t nwasm, const ExtismConfig *config,
+                          size_t nconfig) {
+  assert(nwasm <= EXTISM_MAX_LINKED_MODULES);
+  memcpy(manifest->wasm, wasm, nwasm * sizeof(ExtismWasm));
+  manifest->wasm_count = nwasm;
+
+  assert(nconfig <= EXTISM_MAX_CONFIG);
+  memcpy(manifest->config, config, nconfig * sizeof(ExtismConfig));
+  manifest->config_count = nconfig;
+}
+
+void extism_plugin_use_kernel(ExtismPlugin *plugin) {
+  wasm_runtime_set_module_inst(plugin->exec, plugin->kernel.instance);
+}
+
+void extism_plugin_use_plugin(ExtismPlugin *plugin) {
+  wasm_runtime_set_module_inst(plugin->exec, plugin->instance);
+}
+
+void extism_runtime_init() { wasm_runtime_init(); }
+
+void extism_runtime_cleanup() { wasm_runtime_destroy(); }

@@ -46,12 +46,13 @@ int main(int argc, char *argv[]) {
 
   // Specify the modules to be loaded, setting `name` to `NULL` marks a module
   // at the main module
-  ExtismManifest manifest = {.wasm = {{
-                                 .data = data,
-                                 .length = datalen,
-                                 .name = NULL,
-                             }},
-                             .wasm_count = 1};
+  ExtismManifest manifest;
+  ExtismWasm wasm = {
+      .data = data,
+      .length = datalen,
+      .name = NULL,
+  };
+  extism_manifest_init(&manifest, &wasm, 1, NULL, 0);
 
   // Create the plugin
   ExtismPlugin *plugin = extism_plugin_new(&manifest, errbuf, 1024);
@@ -64,19 +65,22 @@ int main(int argc, char *argv[]) {
 
   // Call `count_vowels` function
   ExtismStatus status;
-  if ((status = extism_plugin_call(plugin, argv[2], argv[3],
-                                   strlen(argv[3]))) != ExtismStatusOk) {
-    // Print error if it fails
-    const char *s = extism_plugin_error(plugin, &len);
-    fprintf(stderr, "ERROR(%d): ", status);
-    fwrite(s, len, 1, stderr);
-    fputc('\n', stderr);
-  } else {
-    // Otherwise print the output
-    uint8_t *output = extism_plugin_output(plugin, &len);
-    printf("Output length=%ld\n", len);
-    fwrite(output, len, 1, stdout);
-    fputc('\n', stdout);
+
+  for (size_t i = 0; i < 10; i++) {
+    if ((status = extism_plugin_call(plugin, argv[2], argv[3],
+                                     strlen(argv[3]))) != ExtismStatusOk) {
+      // Print error if it fails
+      const char *s = extism_plugin_error(plugin, &len);
+      fprintf(stderr, "ERROR(%d): ", status);
+      fwrite(s, len, 1, stderr);
+      fputc('\n', stderr);
+    } else {
+      // Otherwise print the output
+      uint8_t *output = extism_plugin_output(plugin, &len);
+      printf("Output length=%ld\n", len);
+      fwrite(output, len, 1, stdout);
+      fputc('\n', stdout);
+    }
   }
 
   // Cleanup
