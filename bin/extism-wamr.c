@@ -67,6 +67,7 @@ int main(int argc, char *argv[]) {
     fputs("ERROR: ", stderr);
     fputs(errbuf, stderr);
     fputs("\n", stderr);
+    free(data);
     return 1;
   }
 
@@ -94,5 +95,6 @@ int main(int argc, char *argv[]) {
   // Cleanup
   extism_plugin_free(plugin);
   extism_runtime_cleanup();
+  free(data);
   return 0;
 }
