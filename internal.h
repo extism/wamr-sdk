@@ -30,7 +30,7 @@ struct ExtismKernel {
 };
 
 typedef struct ExtismPlugin {
-  ExtismKeyValue vars[EXTISM_MAX_CONFIG];
+  ExtismVar vars[EXTISM_MAX_CONFIG];
   size_t var_count;
   const ExtismManifest *manifest;
   struct ExtismKernel kernel;

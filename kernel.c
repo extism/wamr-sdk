@@ -202,19 +202,58 @@ uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
   return 0;
 }
 uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
-
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
-  wasm_runtime_set_exception(plugin->instance,
-                             "extism:host/env::var_get not implemented");
-  wasm_runtime_terminate(plugin->instance);
+  uint64_t len = k_length(env, k);
+  if (len == 0) {
+    return 0;
+  }
+
+  void *ptr;
+  WITH_KERNEL(plugin, {
+    ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, k);
+  });
+
+  for (size_t i = 0; i < plugin->var_count; i++) {
+    if (strncmp(plugin->vars[i].key, ptr, len) == 0) {
+      return plugin_alloc(plugin, plugin->vars[i].value,
+                          strlen(plugin->vars[i].value));
+    }
+  }
+
   return 0;
 }
 void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
-
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
-  wasm_runtime_set_exception(plugin->instance,
-                             "extism:host/env::var_set not implemented");
-  wasm_runtime_terminate(plugin->instance);
+  uint64_t klen = k_length(env, k);
+  if (klen == 0) {
+    return;
+  }
+
+  uint64_t vlen = k_length(env, v);
+
+  void *ptr, *vptr;
+  WITH_KERNEL(plugin, {
+    ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, k);
+    vptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, v);
+  });
+
+  for (size_t i = 0; i < plugin->var_count; i++) {
+    if (strncmp(plugin->vars[i].key, ptr, klen) == 0) {
+      os_free(plugin->vars[i].value);
+      plugin->vars[i].value = os_malloc(vlen);
+      memcpy(plugin->vars[i].value, vptr, vlen);
+      plugin->vars[i].length = vlen;
+    }
+  }
+
+  if (plugin->var_count < EXTISM_MAX_CONFIG) {
+    plugin->vars[plugin->var_count].key = os_malloc(klen);
+    memcpy(plugin->vars[plugin->var_count].key, ptr, klen);
+    plugin->vars[plugin->var_count].value = os_malloc(vlen);
+    memcpy(plugin->vars[plugin->var_count].value, vptr, vlen);
+    plugin->vars[plugin->var_count].length = vlen;
+    plugin->var_count += 1;
+  }
 }
 uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);

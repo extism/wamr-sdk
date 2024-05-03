@@ -100,7 +100,10 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   // TODO: make memory settings configurable
   plugin->instance =
       wasm_runtime_instantiate(plugin->main, 4096, 65536 * 10, errmsg, errlen);
+
   plugin->exec = wasm_exec_env_create(plugin->instance, 4096);
+
+  // TODO: initialize WASI
 
   wasm_function_inst_t initialize =
       wasm_runtime_lookup_function(plugin->instance, "_initialize");

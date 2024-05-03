@@ -31,12 +31,18 @@ typedef struct {
 typedef struct {
   const char *key;
   const char *value;
-} ExtismKeyValue;
+} ExtismConfig;
+
+typedef struct {
+  char *key;
+  char *value;
+  size_t length;
+} ExtismVar;
 
 typedef struct {
   // Wasm modules
   ExtismWasm wasm[EXTISM_MAX_LINKED_MODULES];
-  ExtismKeyValue config[EXTISM_MAX_CONFIG];
+  ExtismConfig config[EXTISM_MAX_CONFIG];
   // Number of modules
   size_t wasm_count, config_count;
 } ExtismManifest;
