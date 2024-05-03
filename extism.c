@@ -105,19 +105,19 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 
   // TODO: initialize WASI
 
-  wasm_function_inst_t initialize =
-      wasm_runtime_lookup_function(plugin->instance, "_initialize");
-  if (initialize != NULL) {
-    wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, NULL, 0, NULL);
-  }
+  // wasm_function_inst_t initialize =
+  //     wasm_runtime_lookup_function(plugin->instance, "_initialize");
+  // if (initialize != NULL) {
+  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, NULL, 0, NULL);
+  // }
 
-  wasm_function_inst_t hs_init =
-      wasm_runtime_lookup_function(plugin->instance, "hs_init");
-  if (hs_init != NULL) {
-    wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
-                           {.kind = WASM_I32, .of = {.i32 = 0}}};
-    wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
-  }
+  // wasm_function_inst_t hs_init =
+  //     wasm_runtime_lookup_function(plugin->instance, "hs_init");
+  // if (hs_init != NULL) {
+  //   wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
+  //                          {.kind = WASM_I32, .of = {.i32 = 0}}};
+  //   wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
+  // }
 
   return ExtismStatusOk;
 }
