@@ -4,8 +4,8 @@ CMakeFiles
 *.o
 *.so
 *.dylib
-Makefile
 *.cmake
 Testing
 extism-wamr
 test_wrgsbase.c
+build
