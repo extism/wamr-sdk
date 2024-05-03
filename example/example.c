@@ -28,6 +28,8 @@ uint8_t *read_file(const char *filename, size_t *len) {
   return data;
 }
 
+uint64_t host_reflect(ExtismExecEnv *env, uint64_t x) { return x; }
+
 int main(int argc, char *argv[]) {
   size_t len = 0, datalen = 0;
   char errbuf[1024];
@@ -53,6 +55,9 @@ int main(int argc, char *argv[]) {
       .name = NULL,
   };
   extism_manifest_init(&manifest, &wasm, 1, NULL, 0);
+
+  extism_host_function("extism:host/user", "host_reflect", "(I)I", host_reflect,
+                       NULL);
 
   // Create the plugin
   ExtismPlugin *plugin = extism_plugin_new(&manifest, errbuf, 1024);

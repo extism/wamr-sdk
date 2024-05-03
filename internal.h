@@ -78,3 +78,12 @@ uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size);
   extism_plugin_use_kernel(plugin);                                            \
   x;                                                                           \
   extism_plugin_use_plugin(plugin);
+
+struct Symbols {
+  NativeSymbol *symbols;
+  size_t length, capacity;
+};
+
+void symbols_init(struct Symbols *symbols, size_t total);
+NativeSymbol *symbols_add(struct Symbols *s, const NativeSymbol *sym);
+void symbols_reset(struct Symbols *s);

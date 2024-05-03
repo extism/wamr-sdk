@@ -5,6 +5,8 @@
 #include <string.h>
 #include <wasm_export.h>
 
+static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
+
 static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
                                        const ExtismManifest *manifest,
                                        char *errmsg, size_t errlen) {
@@ -278,7 +280,7 @@ void extism_host_function(const char *module, const char *name,
   f.attachment = user_data;
   f.func_ptr = func;
   f.signature = signature;
-  wasm_runtime_register_natives(module, &f, 1);
+  wasm_runtime_register_natives(module, symbols_add(&SYMBOLS, &f), 1);
 }
 
 // Get host pointer
@@ -329,6 +331,12 @@ void extism_plugin_use_plugin(ExtismPlugin *plugin) {
   wasm_runtime_set_module_inst(plugin->exec, plugin->instance);
 }
 
-void extism_runtime_init() { wasm_runtime_init(); }
+void extism_runtime_init() {
+  symbols_init(&SYMBOLS, 64);
+  wasm_runtime_init();
+}
 
-void extism_runtime_cleanup() { wasm_runtime_destroy(); }
+void extism_runtime_cleanup() {
+  wasm_runtime_destroy();
+  symbols_reset(&SYMBOLS);
+}

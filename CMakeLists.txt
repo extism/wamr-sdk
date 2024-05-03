@@ -28,7 +28,7 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
 # extism-wamr
  
-add_library (extism-wamr STATIC kernel.c extism.c)
+add_library (extism-wamr STATIC symbols.c kernel.c extism.c)
 target_link_libraries (extism-wamr vmlib m)
 
 # Install
