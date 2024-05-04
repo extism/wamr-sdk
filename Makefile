@@ -4,6 +4,9 @@ build: extism-wamr
 	cp build/libextism-wamr.a .
 	cp build/extism-wamr .
 
+test: build
+	cd build && make test
+
 clean:
 	rm -rf ./build
 
