@@ -2,7 +2,6 @@
 #include "internal.h"
 
 #include <string.h>
-#include <wasm_export.h>
 
 static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
 

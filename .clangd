@@ -1,2 +1,0 @@
-CompileFlags:
-	Add: [-I, wasm-micro-runtime/core/iwasm/interpreter, -I, ./wasm-micro-runtime/core/shared/utils, -I, ./wasm-micro-runtime/core/shared/platform/linux/]
