@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   size_t len = 0, datalen = 0;
   char errbuf[1024];
 
-  if (argc < 4) {
+  if (argc < 3) {
     fprintf(stderr, "Usage: %s <wasm file> <function name> <input>", argv[0]);
     return 1;
   }
@@ -77,8 +77,9 @@ int main(int argc, char *argv[]) {
   int loop = atoi(env == NULL ? "1" : env);
 
   for (int i = 0; i < loop; i++) {
-    if ((status = extism_plugin_call(plugin, argv[2], argv[3],
-                                     strlen(argv[3]))) != ExtismStatusOk) {
+    if ((status = extism_plugin_call(plugin, argv[2], argc > 3 ? argv[3] : "",
+                                     argc > 3 ? strlen(argv[3]) : 0)) !=
+        ExtismStatusOk) {
       // Print error if it fails
       const char *s = extism_plugin_error(plugin, &len);
       fprintf(stderr, "ERROR(%d): ", status);
@@ -87,8 +88,10 @@ int main(int argc, char *argv[]) {
     } else {
       // Otherwise print the output
       uint8_t *output = extism_plugin_output(plugin, &len);
-      fwrite(output, len, 1, stdout);
-      fputc('\n', stdout);
+      if (len > 0) {
+        fwrite(output, len, 1, stdout);
+        fputc('\n', stdout);
+      }
     }
   }
 
