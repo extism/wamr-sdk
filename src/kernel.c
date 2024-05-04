@@ -28,7 +28,7 @@ uint64_t k_alloc(wasm_exec_env_t env, uint64_t size) {
   return results[0].of.i64;
 }
 
-void k_reset(wasm_exec_env_t env, uint64_t size) {
+void k_reset(wasm_exec_env_t env) {
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   struct ExtismKernel *kernel = &plugin->kernel;
   KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->reset, 0, NULL, 0, NULL));
@@ -256,6 +256,8 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
   }
 }
 uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
+  (void)req;
+  (void)body;
   ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
   wasm_runtime_set_exception(plugin->instance,
                              "extism:host/env::http_request not implemented");

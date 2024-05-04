@@ -44,7 +44,7 @@ typedef struct ExtismPlugin {
 void init_kernel(struct ExtismKernel *kernel, const ExtismMemoryConfig *memory);
 void link_kernel(ExtismPlugin *plugin);
 uint64_t k_alloc(wasm_exec_env_t env, uint64_t size);
-void k_reset(wasm_exec_env_t env, uint64_t size);
+void k_reset(wasm_exec_env_t env);
 void k_free(wasm_exec_env_t env, uint64_t offs);
 uint64_t k_length(wasm_exec_env_t env, uint64_t offs);
 void k_output_set(wasm_exec_env_t env, uint64_t offs, uint64_t length);
