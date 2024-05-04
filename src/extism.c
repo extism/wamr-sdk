@@ -270,11 +270,12 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
   return ExtismStatusOk;
 }
 
-ExtismStatus extism_plugin_exec(ExtismPlugin *plugin, const char *func_name,
-                                void *input, size_t input_length, char **argv,
-                                int argc) {
-  wasm_runtime_set_wasi_args(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
-                             argc);
+ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
+                                     const char *func_name, void *input,
+                                     size_t input_length, char **argv, int argc,
+                                     int stdin, int stdout, int stderr) {
+  wasm_runtime_set_wasi_args_ex(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
+                                argc, stdin, stdout, stderr);
   return extism_plugin_call(plugin, func_name, input, input_length);
 }
 
