@@ -34,6 +34,12 @@ int main(int argc, char *argv[]) {
   size_t len = 0, datalen = 0;
   char errbuf[1024];
 
+  // Setup loop
+  const char *env = getenv("EXTISM_WAMR_LOOP");
+  int loop = atoi(env == NULL ? "1" : env);
+
+  ExtismStatus status;
+
   if (argc < 3) {
     fprintf(stderr, "Usage: %s <wasm file> <function name> <input>", argv[0]);
     return 1;
@@ -71,15 +77,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // Call `count_vowels` function
-  ExtismStatus status;
-  const char *env = getenv("EXTISM_WAMR_LOOP");
-  int loop = atoi(env == NULL ? "1" : env);
+  const char *input = argc > 3 ? argv[3] : "";
+  size_t input_len = argc > 3 ? strlen(argv[3]) : 0;
 
   for (int i = 0; i < loop; i++) {
-    if ((status = extism_plugin_call(plugin, argv[2], argc > 3 ? argv[3] : "",
-                                     argc > 3 ? strlen(argv[3]) : 0)) !=
-        ExtismStatusOk) {
+    // Call `count_vowels` function
+    if ((status = extism_plugin_call(plugin, argv[2], (const void *)input,
+                                     input_len)) != ExtismStatusOk) {
       // Print error if it fails
       const char *s = extism_plugin_error(plugin, &len);
       fprintf(stderr, "ERROR(%d): ", status);

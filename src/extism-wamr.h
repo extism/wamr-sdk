@@ -81,11 +81,11 @@ void extism_plugin_free(ExtismPlugin *plugin);
 
 // Call a function with the given input
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
-                                void *input, size_t input_length);
+                                const void *input, size_t input_length);
 
 // Similar to `extism_plugin_call` but allows passing WASI arguments/stdio
 ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
-                                     const char *func_name, void *input,
+                                     const char *func_name, const void *input,
                                      size_t input_length, char **argv, int argc,
                                      int stdin, int stdout, int stderr);
 

@@ -24,33 +24,19 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
    .func_ptr = k_##name,                                                       \
    .attachment = plugin}
   NativeSymbol kernel[] = {
-      FN(alloc, "(I)I"),
-      FN(free, "(I)"),
-      FN(output_set, "(II)"),
-      FN(output_length, "()I"),
-      FN(output_offset, "()I"),
-      FN(input_set, "(I, I)"),
-      FN(input_length, "()I"),
-      FN(input_offset, "()I"),
-      FN(load_u8, "(I)i"),
-      FN(input_load_u8, "(I)i"),
-      FN(load_u64, "(I)I"),
-      FN(input_load_u64, "(I)I"),
-      FN(store_u8, "(Ii)"),
-      FN(store_u64, "(II)"),
-      FN(error_set, "(I)"),
-      FN(error_get, "()I"),
-      FN(length, "(I)I"),
-      FN(reset, "()"),
-      FN(log_info, "(I)"),
-      FN(log_debug, "(I)"),
-      FN(log_warn, "(I)"),
-      FN(log_error, "(I)"),
-      // TODO
-      FN(config_get, "(I)I"),
-      FN(var_get, "(I)I"),
-      FN(var_set, "(II)"),
-      FN(http_request, "(II)I"),
+      FN(alloc, "(I)I"),           FN(free, "(I)"),
+      FN(output_set, "(II)"),      FN(output_length, "()I"),
+      FN(output_offset, "()I"),    FN(input_set, "(I, I)"),
+      FN(input_length, "()I"),     FN(input_offset, "()I"),
+      FN(load_u8, "(I)i"),         FN(input_load_u8, "(I)i"),
+      FN(load_u64, "(I)I"),        FN(input_load_u64, "(I)I"),
+      FN(store_u8, "(Ii)"),        FN(store_u64, "(II)"),
+      FN(error_set, "(I)"),        FN(error_get, "()I"),
+      FN(length, "(I)I"),          FN(reset, "()"),
+      FN(log_info, "(I)"),         FN(log_debug, "(I)"),
+      FN(log_warn, "(I)"),         FN(log_error, "(I)"),
+      FN(config_get, "(I)I"),      FN(var_get, "(I)I"),
+      FN(var_set, "(II)"),         FN(http_request, "(II)I"),
       FN(http_status_code, "()i"),
   };
 #undef FN
@@ -90,20 +76,17 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   // wasm_function_inst_t initialize =
   //     wasm_runtime_lookup_function(plugin->instance, "_initialize");
   // if (initialize != NULL) {
-  //   wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
-  //                          {.kind = WASM_I32, .of = {.i32 = 0}}};
-  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, params, 0, params);
+  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, NULL, 0, NULL);
   // }
-
-  // wasm_function_inst_t hs_init =
-  //     wasm_runtime_lookup_function(plugin->instance, "hs_init");
-  // if (hs_init != NULL) {
-  //   wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
-  //                          {.kind = WASM_I32, .of = {.i32 = 0}}};
-  //   wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
-  // }
-
   // TODO: initialize WASI?
+
+  wasm_function_inst_t hs_init =
+      wasm_runtime_lookup_function(plugin->instance, "hs_init");
+  if (hs_init != NULL) {
+    wasm_val_t params[] = {{.kind = WASM_I32, .of = {.i32 = 0}},
+                           {.kind = WASM_I32, .of = {.i32 = 0}}};
+    wasm_runtime_call_wasm_a(plugin->exec, hs_init, 0, NULL, 2, params);
+  }
 
   return ExtismStatusOk;
 }
@@ -243,7 +226,7 @@ static void plugin_reset(ExtismPlugin *plugin) {
 }
 
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
-                                void *input, size_t input_length) {
+                                const void *input, size_t input_length) {
 
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
@@ -270,7 +253,7 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
 }
 
 ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
-                                     const char *func_name, void *input,
+                                     const char *func_name, const void *input,
                                      size_t input_length, char **argv, int argc,
                                      int stdin, int stdout, int stderr) {
   wasm_runtime_set_wasi_args_ex(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
