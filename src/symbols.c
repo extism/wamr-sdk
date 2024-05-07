@@ -20,7 +20,7 @@ NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym,
                           size_t n) {
   if (s->length == s->capacity) {
     void *ptr =
-        reallocarray(s->symbols, s->capacity + (n * 2), sizeof(NativeSymbol));
+        realloc(s->symbols, (s->capacity + (n * 2)) * sizeof(NativeSymbol));
     assert(ptr);
     s->symbols = ptr;
   }
