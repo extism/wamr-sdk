@@ -35,3 +35,5 @@ See [extism-wamr.c](bin/extism-wamr.c)
 
 - `extism_runtime_init` should always be called before creating any plugins, and there
   is only a single global runtime that host functions can be loaded into
+- The plugins listed in `ExtismManifest` that depend on other Wasm modules must have all 
+  dependencies listed first in the manifest with module names specified.

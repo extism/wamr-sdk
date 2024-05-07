@@ -4,6 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Extism plugin
+typedef struct ExtismPlugin ExtismPlugin;
+
+// Extism execution environment, this should be used as the first argument when
+// defining a host function
+typedef struct ExtismExecEnv ExtismExecEnv;
+
 // Status type
 typedef enum {
   ExtismStatusOk,
@@ -16,6 +23,8 @@ typedef enum {
 // Determines the maximum number of modules that can be specified in a manifest
 // at once
 #define EXTISM_MAX_LINKED_MODULES 8
+
+// Maximum number of config values
 #define EXTISM_MAX_CONFIG 32
 
 // `ExtismWasm` is used to specify Wasm data when creating plugins
@@ -28,40 +37,43 @@ typedef struct {
   size_t length;
 } ExtismWasm;
 
+// `ExtismConfig` is used  to store a key/value pair that can be accessed using
+// `extism_config_get` from inside a plugin
 typedef struct {
   const char *key;
   const char *value;
 } ExtismConfig;
 
+// `ExtismVar` is used to store a key/value pair that can be accessed using
+// `extism_var_get` and updated using `extism_var_set` from inside a plugin
 typedef struct {
   char *key;
   char *value;
   size_t length;
 } ExtismVar;
 
+// `ExtismMemoryConfig` can be used to specify the amount of memory a plugin
+// should be given access to
 typedef struct {
   uint32_t stack_size;
   size_t heap_size;
 } ExtismMemoryConfig;
 
+// `ExtismManifest` is used configure which Wasm module should be loaded
 typedef struct {
   // Wasm modules
   ExtismWasm wasm[EXTISM_MAX_LINKED_MODULES];
   ExtismConfig config[EXTISM_MAX_CONFIG];
-  // Number of modules
+  // Number of modules, an config items used
   size_t wasm_count, config_count;
+  // Memory config
   ExtismMemoryConfig memory;
 } ExtismManifest;
 
+// Initializes an `ExtismManifest` value
 void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
                           size_t nwasm, const ExtismConfig *config,
                           size_t nconfig, const ExtismMemoryConfig *memory);
-
-struct ExtismKernel;
-typedef struct ExtismPlugin ExtismPlugin;
-
-struct ExtismExecEnv;
-typedef struct ExtismExecEnv ExtismExecEnv;
 
 // Initiailze runtime, this must be called before anything else and only one
 // runtime can be initialized at a time
@@ -89,29 +101,37 @@ ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
                                      size_t input_length, char **argv, int argc,
                                      int stdin, int stdout, int stderr);
 
+// Get the output of a plugin
 uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length);
+
+// Get the error result of a plugin
 const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length);
 
 // Register a host function with the runtime
 void extism_host_function(const char *module, const char *name,
                           const char *signature, void *func, void *user_data);
 
-// Get host pointer
-void *extism_plugin_memory(ExtismPlugin *plugin, uint64_t offs);
+// A pointer to the start of an allocation in Extism memory
+typedef uint64_t ExtismHandle;
+
+// Get host pointer given an Extism memory offset
+void *extism_plugin_memory(ExtismPlugin *plugin, ExtismHandle offs);
 
 // Allocate Extism memory
-uint64_t extism_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
-                                    size_t size);
+ExtismHandle extism_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
+                                        size_t size);
 
 // Get length of allocation in Extism memory
-uint64_t extism_plugin_memory_length(ExtismPlugin *plugin, uint64_t offs);
+uint64_t extism_plugin_memory_length(ExtismPlugin *plugin, ExtismHandle offs);
 
 // Allocate Extism memory
-void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs);
+void extism_plugin_memory_free(ExtismPlugin *plugin, ExtismHandle offs);
 
-// Get user-data from host functions
+// Get user-data from inside host functions
 void *extism_host_function_data(ExtismExecEnv *env);
 
+// These functions are used to switch context between the kernel and plugin
+// modules in host functions, these shouldn't be needed in most cases.
 void extism_plugin_use_kernel(ExtismPlugin *);
 void extism_plugin_use_plugin(ExtismPlugin *);
 

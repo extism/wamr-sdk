@@ -1,14 +1,19 @@
 #include "internal.h"
 #include <stdlib.h>
 
-void init_symbols(struct Symbols *symbols, size_t total) {
-  if (symbols->capacity != 0) {
-    symbols->length = 0;
-    return;
+void init_symbols(struct Symbols *sym, size_t total) {
+  if (sym->capacity != 0 && sym->symbols != NULL) {
+    sym->length = 0;
+    if (sym->capacity >= total) {
+      return;
+    }
+    free(sym->symbols);
   }
-  symbols->symbols = os_malloc(total * sizeof(NativeSymbol));
-  symbols->capacity = total;
-  symbols->length = 0;
+
+  sym->symbols = os_malloc(total * sizeof(NativeSymbol));
+  assert(sym->symbols);
+  sym->capacity = total;
+  sym->length = 0;
 }
 
 NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym,
@@ -26,6 +31,7 @@ NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym,
 
 void reset_symbols(struct Symbols *s) {
   os_free(s->symbols);
+  s->symbols = NULL;
   s->length = 0;
   s->capacity = 0;
 }

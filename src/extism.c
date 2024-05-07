@@ -3,17 +3,19 @@
 
 #include <string.h>
 
+// SYMBOLS contains the global runtime symbols, this is reset when
+// `extism_runtime_free` is called
 static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
 
-static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
-                                       const ExtismManifest *manifest,
-                                       char *errmsg, size_t errlen) {
-  plugin->module_count = manifest->wasm_count;
+static ExtismStatus init_plugin(ExtismPlugin *plugin,
+                                const ExtismManifest *manifest, char *errmsg,
+                                size_t errlen) {
   plugin->exec = NULL;
   plugin->instance = NULL;
   plugin->main = NULL;
-  plugin->manifest = manifest;
   plugin->var_count = 0;
+  plugin->module_count = manifest->wasm_count;
+  plugin->manifest = manifest;
 
   // Initialize kernel
   init_kernel(&plugin->kernel, &manifest->memory);
@@ -73,13 +75,7 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
   plugin->exec =
       wasm_exec_env_create(plugin->instance, manifest->memory.stack_size);
 
-  // wasm_function_inst_t initialize =
-  //     wasm_runtime_lookup_function(plugin->instance, "_initialize");
-  // if (initialize != NULL) {
-  //   wasm_runtime_call_wasm_a(plugin->exec, initialize, 0, NULL, 0, NULL);
-  // }
-  // TODO: initialize WASI?
-
+  // Initialize Haskell runtime
   wasm_function_inst_t hs_init =
       wasm_runtime_lookup_function(plugin->instance, "hs_init");
   if (hs_init != NULL) {
@@ -94,7 +90,7 @@ static ExtismStatus extism_plugin_init(ExtismPlugin *plugin,
 ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
                                 size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
-  if (extism_plugin_init(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
+  if (init_plugin(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
     extism_plugin_free(plugin);
     return NULL;
   }
@@ -110,8 +106,15 @@ static void cleanup_kernel(struct ExtismKernel *kernel) {
   }
 }
 
-static void extism_plugin_cleanup(ExtismPlugin *plugin) {
+static void cleanup_plugin(ExtismPlugin *plugin) {
   if (plugin->exec) {
+    wasm_function_inst_t hs_exit =
+        wasm_runtime_lookup_function(plugin->instance, "hs_exit");
+    if (hs_exit != NULL) {
+
+      wasm_runtime_call_wasm_a(plugin->exec, hs_exit, 0, NULL, 0, NULL);
+    }
+
     wasm_exec_env_destroy(plugin->exec);
   }
 
@@ -127,7 +130,7 @@ static void extism_plugin_cleanup(ExtismPlugin *plugin) {
 }
 
 void extism_plugin_free(ExtismPlugin *plugin) {
-  extism_plugin_cleanup(plugin);
+  cleanup_plugin(plugin);
   os_free(plugin);
 }
 
@@ -281,6 +284,7 @@ const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length) {
   return wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
 }
 
+// Adds a function to `SYMBOLS`
 void extism_host_function(const char *module, const char *name,
                           const char *signature, void *func, void *user_data) {
   NativeSymbol f;
@@ -355,4 +359,8 @@ void extism_runtime_init() {
 void extism_runtime_cleanup() {
   wasm_runtime_destroy();
   reset_symbols(&SYMBOLS);
+}
+
+void *extism_host_function_data(ExtismExecEnv *env) {
+  return wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
 }
