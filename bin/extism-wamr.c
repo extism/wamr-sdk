@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
     fputs(errbuf, stderr);
     fputs("\n", stderr);
     free(data);
+    extism_runtime_cleanup();
     return 1;
   }
 
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
   size_t input_len = argc > 3 ? strlen(argv[3]) : 0;
 
   for (int i = 0; i < loop; i++) {
-    // Call `count_vowels` function
+    // Call a function
     if ((status = extism_plugin_call(plugin, argv[2], (const void *)input,
                                      input_len)) != ExtismStatusOk) {
       // Print error if it fails
