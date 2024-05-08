@@ -39,8 +39,7 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
       FN(log_warn, "(I)"),         FN(log_error, "(I)"),
       FN(config_get, "(I)I"),      FN(var_get, "(I)I"),
       FN(var_set, "(II)"),         FN(http_request, "(II)I"),
-      FN(http_status_code, "()i"),
-  };
+      FN(http_status_code, "()i"), FN(length_unsafe, "(I)I")};
 #undef FN
   size_t nkernel = sizeof(kernel) / sizeof(NativeSymbol);
 
