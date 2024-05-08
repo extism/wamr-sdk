@@ -3,6 +3,10 @@ project(extism-wamr)
 
 enable_testing()
 
+if (NOT CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release)
+endif()
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
@@ -19,6 +23,9 @@ endif()
 if(NOT DEFINED WAMR_BUILD_PLATFORM)
   string(TOLOWER ${CMAKE_SYSTEM_NAME} WAMR_BUILD_PLATFORM)
 endif()
+
+set (CMAKE_C_FLAGS_RELEASE "-O3")
+set (CMAKE_C_FLAGS_DEBUG "-g")
 
 set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_LIBC_BUILTIN 1)

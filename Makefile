@@ -4,6 +4,12 @@ build: extism-wamr
 	cp build/libextism-wamr.a .
 	cp build/extism-wamr .
 
+.PHONY: build
+debug: extism-wamr
+	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && $(MAKE)
+	cp build/libextism-wamr.a .
+	cp build/extism-wamr .
+
 test: build
 	cd build && make test
 
