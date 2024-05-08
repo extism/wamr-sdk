@@ -51,6 +51,15 @@ uint64_t k_length(wasm_exec_env_t env, uint64_t offs) {
   return results[0].of.i64;
 }
 
+uint64_t k_length_unsafe(wasm_exec_env_t env, uint64_t offs) {
+  KERNEL_INIT(plugin, kernel);
+  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
+  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->length_unsafe, 1, results,
+                                       1, params));
+  return results[0].of.i64;
+}
+
 void k_output_set(wasm_exec_env_t env, uint64_t offs, uint64_t length) {
   KERNEL_INIT(plugin, kernel);
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
@@ -315,6 +324,7 @@ void init_kernel(struct ExtismKernel *kernel,
   KERNEL_FN(alloc);
   KERNEL_FN(free);
   KERNEL_FN(length);
+  KERNEL_FN(length_unsafe);
   KERNEL_FN(reset);
   KERNEL_FN(input_set);
   KERNEL_FN(input_offset);

@@ -12,6 +12,7 @@ struct ExtismKernel {
   wasm_function_inst_t alloc;
   wasm_function_inst_t free;
   wasm_function_inst_t length;
+  wasm_function_inst_t length_unsafe;
   wasm_function_inst_t reset;
   wasm_function_inst_t input_offset;
   wasm_function_inst_t input_length;
@@ -47,6 +48,7 @@ uint64_t k_alloc(wasm_exec_env_t env, uint64_t size);
 void k_reset(wasm_exec_env_t env);
 void k_free(wasm_exec_env_t env, uint64_t offs);
 uint64_t k_length(wasm_exec_env_t env, uint64_t offs);
+uint64_t k_length_unsafe(wasm_exec_env_t env, uint64_t offs);
 void k_output_set(wasm_exec_env_t env, uint64_t offs, uint64_t length);
 uint64_t k_output_length(wasm_exec_env_t env);
 uint64_t k_output_offset(wasm_exec_env_t env);
