@@ -1,4 +1,4 @@
-# extism-wamr
+# WAMR SDK
 
 A lightweight [WAMR](https://github.com/bytecodealliance/wasm-micro-runtime) backend for Extism
 
