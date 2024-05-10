@@ -58,7 +58,7 @@ uint64_t k_input_offset(wasm_exec_env_t env);
 uint32_t k_load_u8(wasm_exec_env_t env, uint64_t offs);
 uint32_t k_input_load_u8(wasm_exec_env_t env, uint64_t offs);
 uint64_t k_load_u64(wasm_exec_env_t env, uint64_t offs);
-uint32_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs);
+uint64_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs);
 void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch);
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v);
 uint64_t k_error_get(wasm_exec_env_t env);
