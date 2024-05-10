@@ -6,6 +6,44 @@
 #include <stdio.h>
 #include <wasm_export.h>
 
+#if defined(__arm__) || defined(__aarch64__)
+static uint64_t read_u64(const void *ptr) {
+  union {
+    uint64_t n;
+    char data[8];
+  } tmp;
+  const char *cp = (const char *)ptr;
+  tmp.data[0] = *cp++;
+  tmp.data[1] = *cp++;
+  tmp.data[2] = *cp++;
+  tmp.data[3] = *cp++;
+  tmp.data[4] = *cp++;
+  tmp.data[5] = *cp++;
+  tmp.data[6] = *cp++;
+  tmp.data[7] = *cp;
+  return tmp.n;
+}
+static void write_u64(void *ptr, uint64_t x) {
+  union {
+    uint64_t n;
+    char data[8];
+  } tmp;
+  tmp.n = x;
+  char *cp = (char *)ptr;
+  *cp++ = tmp.data[0];
+  *cp++ = tmp.data[1];
+  *cp++ = tmp.data[2];
+  *cp++ = tmp.data[3];
+  *cp++ = tmp.data[4];
+  *cp++ = tmp.data[5];
+  *cp++ = tmp.data[6];
+  *cp++ = tmp.data[7];
+}
+#else
+static uint64_t read_u64(const void *x) { return *(uint64_t *)x; }
+static void write_u64(void *ptr, uint64_t x) { *(uint64_t *)ptr = x; }
+#endif
+
 // KERNEL_CALL depends on `plugin` and `kernel` variables
 #define KERNEL_CALL(x)                                                         \
   WITH_KERNEL(plugin, {                                                        \
@@ -127,7 +165,7 @@ uint64_t k_load_u64(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
   uint8_t *ptr = extism_plugin_memory(plugin, offs);
-  return *(uint64_t *)ptr;
+  return read_u64(ptr);
 }
 
 uint64_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
@@ -135,7 +173,7 @@ uint64_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
   uint64_t input_offs = k_input_offset(env);
   (void)kernel;
   uint8_t *ptr = extism_plugin_memory(plugin, input_offs + offs);
-  return *(uint64_t *)ptr;
+  return read_u64(ptr);
 }
 
 void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch) {
@@ -149,7 +187,7 @@ void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
   uint8_t *ptr = extism_plugin_memory(plugin, offs);
-  *(uint64_t *)ptr = v;
+  write_u64(ptr, v);
 }
 
 uint64_t k_error_get(wasm_exec_env_t env) {
