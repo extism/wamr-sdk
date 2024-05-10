@@ -79,7 +79,7 @@ uint64_t k_output_length(wasm_exec_env_t env) {
 uint64_t k_output_offset(wasm_exec_env_t env) {
   KERNEL_INIT(plugin, kernel);
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->output_length, 1, results,
+  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->output_offset, 1, results,
                                        0, NULL));
   return results[0].of.i64;
 }
@@ -104,60 +104,52 @@ uint64_t k_input_offset(wasm_exec_env_t env) {
   KERNEL_INIT(plugin, kernel);
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
   KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->input_length, 1, results, 0, NULL));
+      wasm_runtime_call_wasm_a(env, kernel->input_offset, 1, results, 0, NULL));
   return results[0].of.i64;
 }
 
 uint32_t k_load_u8(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
-  KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->load_u8, 1, results, 1, params));
-  return results[0].of.i32;
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  return ptr[0];
 }
 
 uint32_t k_input_load_u8(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
-  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->input_load_u8, 1, results,
-                                       1, params));
-  return results[0].of.i32;
+  uint64_t x = k_input_offset(env);
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, x + offs);
+  return ptr[0];
 }
 
 uint64_t k_load_u64(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->load_u64, 1, results, 1, params));
-  return results[0].of.i64;
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  return *(uint64_t *)ptr;
 }
 
-uint32_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
+uint64_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
-  wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  KERNEL_CALL(wasm_runtime_call_wasm_a(env, kernel->input_load_u64, 1, results,
-                                       1, params));
-  return results[0].of.i64;
+  uint64_t input_offs = k_input_offset(env);
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, input_offs + offs);
+  return *(uint64_t *)ptr;
 }
 
 void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
-                         {.kind = WASM_I32, .of = {.i32 = ch}}};
-  KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->store_u8, 0, NULL, 2, params));
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  ptr[0] = (uint8_t)ch;
 }
 
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v) {
   KERNEL_INIT(plugin, kernel);
-  wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}},
-                         {.kind = WASM_I64, .of = {.i64 = v}}};
-  KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->store_u64, 0, NULL, 2, params));
+  (void)kernel;
+  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  *(uint64_t *)ptr = v;
 }
 
 uint64_t k_error_get(wasm_exec_env_t env) {
@@ -172,7 +164,7 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   KERNEL_CALL(
-      wasm_runtime_call_wasm_a(env, kernel->error_get, 0, NULL, 1, params));
+      wasm_runtime_call_wasm_a(env, kernel->error_set, 0, NULL, 1, params));
 }
 
 uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
@@ -188,7 +180,8 @@ uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
   });
 
   for (size_t i = 0; i < plugin->manifest->config_count; i++) {
-    if (strncmp(plugin->manifest->config[i].key, ptr, len) == 0) {
+    if (strlen(plugin->manifest->config[i].key) == len &&
+        strncmp(plugin->manifest->config[i].key, ptr, len) == 0) {
       return plugin_alloc(plugin, plugin->manifest->config[i].value,
                           strlen(plugin->manifest->config[i].value));
     }
@@ -209,7 +202,8 @@ uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
   });
 
   for (size_t i = 0; i < plugin->var_count; i++) {
-    if (strncmp(plugin->vars[i].key, ptr, len) == 0) {
+    if (strlen(plugin->vars[i].key) == len &&
+        strncmp(plugin->vars[i].key, ptr, len) == 0) {
       return plugin_alloc(plugin, plugin->vars[i].value,
                           plugin->vars[i].length);
     }
@@ -236,9 +230,12 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
   });
 
   for (size_t i = 0; i < plugin->var_count; i++) {
-    if (strncmp(plugin->vars[i].key, ptr, klen) == 0) {
-      os_free(plugin->vars[i].value);
-      plugin->vars[i].value = os_malloc(vlen);
+    if (strlen(plugin->vars[i].key) == klen &&
+        strncmp(plugin->vars[i].key, ptr, klen) == 0) {
+      if (plugin->vars[i].length != vlen) {
+        os_free(plugin->vars[i].value);
+        plugin->vars[i].value = os_malloc(vlen);
+      }
       memcpy(plugin->vars[i].value, vptr, vlen);
       plugin->vars[i].length = vlen;
       return;
@@ -246,8 +243,9 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
   }
 
   if (plugin->var_count < EXTISM_MAX_CONFIG) {
-    plugin->vars[plugin->var_count].key = os_malloc(klen);
+    plugin->vars[plugin->var_count].key = os_malloc(klen + 1);
     memcpy(plugin->vars[plugin->var_count].key, ptr, klen);
+    plugin->vars[plugin->var_count].key[klen] = '\0';
     plugin->vars[plugin->var_count].value = os_malloc(vlen);
     memcpy(plugin->vars[plugin->var_count].value, vptr, vlen);
     plugin->vars[plugin->var_count].length = vlen;
@@ -311,8 +309,6 @@ static wasm_module_t load_extism_kernel() {
 void init_kernel(struct ExtismKernel *kernel,
                  const ExtismMemoryConfig *memory) {
   kernel->module = load_extism_kernel();
-  // TODO: base the memory kernel size off of the total memory size once that
-  // becomes configurable
   kernel->instance = wasm_runtime_instantiate(
       kernel->module, memory->stack_size / 4, memory->heap_size / 4, NULL, 0);
 

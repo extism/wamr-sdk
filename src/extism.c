@@ -125,6 +125,11 @@ static void cleanup_plugin(ExtismPlugin *plugin) {
     wasm_runtime_unload(plugin->modules[i]);
   }
 
+  for (size_t i = 0; i < plugin->var_count; i++) {
+    os_free(plugin->vars[i].key);
+    os_free(plugin->vars[i].value);
+  }
+
   cleanup_kernel(&plugin->kernel);
 }
 
@@ -145,26 +150,7 @@ uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
   }
 
   if (s) {
-    const size_t chunk_count = size >> 3;
-    const uint64_t *i64_buffer = s;
-    for (size_t chunk_idx = 0; chunk_idx < chunk_count; chunk_idx++) {
-      wasm_val_t u64_params[] = {
-          {.kind = WASM_I64, .of = {.i64 = offset + (chunk_idx << 3)}},
-          {.kind = WASM_I64, .of = {.i64 = i64_buffer[chunk_idx]}}};
-      assert(wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.store_u64, 0,
-                                      NULL, 2, u64_params));
-    }
-
-    size_t remainder_offset = chunk_count << 3;
-    const size_t remainder_end = remainder_offset + (size & 7);
-    for (const uint8_t *u8_buffer = s; remainder_offset < remainder_end;
-         remainder_offset++) {
-      wasm_val_t u8_params[] = {
-          {.kind = WASM_I64, .of = {.i64 = offset + remainder_offset}},
-          {.kind = WASM_I32, .of = {.i32 = u8_buffer[remainder_offset]}}};
-      assert(wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.store_u8, 0,
-                                      NULL, 2, u8_params));
-    }
+    memcpy(extism_plugin_memory(plugin, offset), s, size);
   }
 
   extism_plugin_use_plugin(plugin);
