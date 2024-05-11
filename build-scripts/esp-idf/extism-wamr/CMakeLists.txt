@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # Set WAMR's build options
+
 if (NOT CMAKE_BUILD_EARLY_EXPANSION)
 
   if (CONFIG_IDF_TARGET_ARCH_RISCV)
@@ -88,6 +89,13 @@ if (NOT CMAKE_BUILD_EARLY_EXPANSION)
                     "${SRC_DIR}"
                   )
 endif ()
+
+set (WAMR_BUILD_TAIL_CALL 1)
+
+
+set (WAMR_BUILD_GC 1)
+set (WASM_ENABLE_BULK_MEMORY 1)
+
 
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${include_dirs}

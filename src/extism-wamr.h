@@ -99,7 +99,7 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
 ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
                                      const char *func_name, const void *input,
                                      size_t input_length, char **argv, int argc,
-                                     int stdin, int stdout, int stderr);
+                                     int stdinfd, int stdoutfd, int stderrfd);
 
 // Get the output of a plugin
 uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length);

@@ -331,10 +331,9 @@ LOG_FN(warn, "WARN")
 LOG_FN(debug, "DEBUG")
 LOG_FN(error, "ERROR")
 
-static wasm_module_t load_extism_kernel() {
-  char errormsg[2048];
+static wasm_module_t load_extism_kernel(char errormsg[1024]) {
   wasm_module_t module = wasm_runtime_load(
-      extism_runtime_wasm, extism_runtime_wasm_len, errormsg, 2048);
+      extism_runtime_wasm, extism_runtime_wasm_len, errormsg, 1024);
   if (module == NULL) {
     // TODO: log error
     puts(errormsg);
@@ -346,12 +345,28 @@ static wasm_module_t load_extism_kernel() {
 
 void init_kernel(struct ExtismKernel *kernel,
                  const ExtismMemoryConfig *memory) {
-  kernel->module = load_extism_kernel();
-  kernel->instance = wasm_runtime_instantiate(
-      kernel->module, memory->stack_size / 4, memory->heap_size / 4, NULL, 0);
+  char errormsg[1024];
+  puts("Loading kernel");
+  kernel->module = load_extism_kernel(errormsg);
+  assert(kernel->module);
+  puts("Kernel loaded");
+
+  puts("Instantiating kernel");
+  kernel->instance =
+      wasm_runtime_instantiate(kernel->module, memory->stack_size / 2,
+                               memory->heap_size / 2, errormsg, 1024);
+  if (kernel->instance == NULL) {
+    puts(errormsg);
+    exit(1);
+  }
+  assert(kernel->instance);
+  puts("Kernel instantiated");
 
   // Kernel functions
 #define KERNEL_FN(x)                                                           \
+  puts(#x);                                                                    \
+  assert(kernel);                                                              \
+  assert(kernel->instance);                                                    \
   kernel->x = wasm_runtime_lookup_function(kernel->instance, #x);              \
   assert(kernel->x);
 
