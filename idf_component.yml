@@ -1,0 +1,14 @@
+version: "2.0.0"
+description: Extism WAMR SDK
+repository: https://github.com/extism/wamr-sdk
+documentation: https://github.com/extism/wamr-sdk
+issues: https://github.com/extism/wamr-sdk/issues
+dependencies:
+  idf: ">=4.4"
+targets:
+  - esp32
+  - esp32s3
+  - esp32c3
+  - esp32c6
+# examples:
+#   - path: product-mini/platforms/esp-idf

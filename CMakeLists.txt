@@ -1,7 +1,4 @@
 cmake_minimum_required (VERSION 3.14)
-project(extism-wamr)
-
-enable_testing()
 
 if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Release)
@@ -9,6 +6,15 @@ endif()
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
+
+if(ESP_PLATFORM)
+  include (${COMPONENT_DIR}/build-scripts/esp-idf/extism-wamr/CMakeLists.txt)
+  return()
+endif()
+
+
+project(extism-wamr)
+enable_testing()
 
 # Configure WAMR
 
@@ -22,6 +28,9 @@ endif()
 
 if(NOT DEFINED WAMR_BUILD_PLATFORM)
   string(TOLOWER ${CMAKE_SYSTEM_NAME} WAMR_BUILD_PLATFORM)
+elseif(${WAMR_BUILD_PLATFORM} MATCHES "esp-idf")
+  string(TOLOWER ${CMAKE_SYSTEM_NAME} WAMR_BUILD_PLATFORM)
+  set(ESP_PLATFORM 1)
 endif()
 
 set (CMAKE_C_FLAGS_RELEASE "-O3")
