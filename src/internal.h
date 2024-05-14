@@ -6,16 +6,7 @@
 
 #include <assert.h>
 
-struct K {
-  uint64_t input_offset;
-  uint64_t input_length;
-  uint64_t output_offset;
-  uint64_t output_length;
-  uint64_t error;
-};
-
 struct ExtismKernel {
-  struct K k;
   wasm_module_t module;
   wasm_module_inst_t instance;
   wasm_function_inst_t alloc;

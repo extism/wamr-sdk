@@ -67,19 +67,21 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
     return ExtismStatusErrNoWasm;
   }
 
-  InstantiationArgs args;
-  args.default_stack_size = manifest->memory.stack_size / 2;
-  args.host_managed_heap_size = manifest->memory.heap_size / 2;
-
-  if (manifest->memory.max_pages) {
-    args.max_memory_pages = manifest->memory.max_pages / 2;
-  }
-
   plugin->instance =
-      wasm_runtime_instantiate_ex(plugin->main, &args, errmsg, errlen);
+      wasm_runtime_instantiate(plugin->main, manifest->memory.stack_size / 2,
+                               manifest->memory.heap_size / 2, errmsg, errlen);
+  if (plugin->instance == NULL) {
+    puts(errmsg);
+    return ExtismStatusErr;
+  }
 
   plugin->exec =
       wasm_exec_env_create(plugin->instance, manifest->memory.stack_size);
+  if (plugin->exec == NULL) {
+    wasm_runtime_deinstantiate(plugin->instance);
+    plugin->instance = NULL;
+    return ExtismStatusErr;
+  }
 
   // Initialize Haskell runtime
   wasm_function_inst_t hs_init =

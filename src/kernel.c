@@ -345,20 +345,14 @@ static wasm_module_t load_extism_kernel(char errormsg[128]) {
 
 void init_kernel(struct ExtismKernel *kernel,
                  const ExtismMemoryConfig *memory) {
+  assert(kernel);
   char errormsg[128];
   kernel->module = load_extism_kernel(errormsg);
   assert(kernel->module);
 
-  InstantiationArgs args;
-  args.default_stack_size = memory->stack_size / 2;
-  args.host_managed_heap_size = memory->heap_size / 2;
-
-  if (memory->max_pages) {
-    args.max_memory_pages = memory->max_pages / 2;
-  }
-
   kernel->instance =
-      wasm_runtime_instantiate_ex(kernel->module, &args, errormsg, 128);
+      wasm_runtime_instantiate(kernel->module, memory->stack_size / 2,
+                               memory->stack_size / 2, errormsg, 128);
   if (kernel->instance == NULL) {
     puts(errormsg);
     exit(1);
@@ -367,9 +361,6 @@ void init_kernel(struct ExtismKernel *kernel,
 
   // Kernel functions
 #define KERNEL_FN(x)                                                           \
-  puts(#x);                                                                    \
-  assert(kernel);                                                              \
-  assert(kernel->instance);                                                    \
   kernel->x = wasm_runtime_lookup_function(kernel->instance, #x);              \
   assert(kernel->x);
 
