@@ -69,6 +69,14 @@ if (NOT CMAKE_BUILD_EARLY_EXPANSION)
       set (WAMR_BUILD_LIB_PTHREAD 1)
   endif ()
 
+  if (CONFIG_WAMR_ENABLE_TAIL_CALL)
+    set (WAMR_BUILD_TAIL_CALL 1)
+  endif ()
+
+  if (CONFIG_WAMR_ENABLE_GC)
+    set (WAMR_BUILD_GC 1)
+  endif ()
+
   set (WAMR_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../wasm-micro-runtime)
   set (SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../src)
   include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
@@ -90,11 +98,6 @@ if (NOT CMAKE_BUILD_EARLY_EXPANSION)
                   )
 endif ()
 
-set (WAMR_BUILD_TAIL_CALL 1)
-
-
-set (WAMR_BUILD_GC 1)
-set (WASM_ENABLE_BULK_MEMORY 1)
 
 
 idf_component_register(SRCS ${srcs}

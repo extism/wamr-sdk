@@ -74,4 +74,12 @@ menu "Extism WAMR"
     config WAMR_ENABLE_SHARED_MEMORY
         bool "Shared memory"
         default n
+
+    config WAMR_ENABLE_GC
+        bool "GC"
+        default n
+    
+    config WAMR_ENABLE_TAIL_CALL
+        bool "Tail calls"
+        default n
 endmenu

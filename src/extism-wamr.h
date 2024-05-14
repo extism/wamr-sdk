@@ -25,7 +25,7 @@ typedef enum {
 #define EXTISM_MAX_LINKED_MODULES 8
 
 // Maximum number of config values
-#define EXTISM_MAX_CONFIG 32
+#define EXTISM_MAX_CONFIG 24
 
 // `ExtismWasm` is used to specify Wasm data when creating plugins
 typedef struct {
@@ -57,6 +57,7 @@ typedef struct {
 typedef struct {
   uint32_t stack_size;
   size_t heap_size;
+  uint32_t max_pages;
 } ExtismMemoryConfig;
 
 // `ExtismManifest` is used configure which Wasm module should be loaded

@@ -17,10 +17,8 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   plugin->module_count = manifest->wasm_count;
   plugin->manifest = manifest;
 
-  puts("Init kernel");
   // Initialize kernel
   init_kernel(&plugin->kernel, &manifest->memory);
-  puts("Kernel initialized");
 
 #define FN(name, args)                                                         \
   {.symbol = #name,                                                            \
@@ -69,9 +67,16 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
     return ExtismStatusErrNoWasm;
   }
 
+  InstantiationArgs args;
+  args.default_stack_size = manifest->memory.stack_size / 2;
+  args.host_managed_heap_size = manifest->memory.heap_size / 2;
+
+  if (manifest->memory.max_pages) {
+    args.max_memory_pages = manifest->memory.max_pages / 2;
+  }
+
   plugin->instance =
-      wasm_runtime_instantiate(plugin->main, (manifest->memory.stack_size) / 2,
-                               manifest->memory.heap_size / 2, errmsg, errlen);
+      wasm_runtime_instantiate_ex(plugin->main, &args, errmsg, errlen);
 
   plugin->exec =
       wasm_exec_env_create(plugin->instance, manifest->memory.stack_size);
@@ -339,15 +344,14 @@ void extism_plugin_use_plugin(ExtismPlugin *plugin) {
 }
 
 void extism_runtime_init() {
-  init_symbols(&SYMBOLS, 64);
-  wasm_runtime_init();
-  // RuntimeInitArgs init;
-  // memset(&init, 0, sizeof(RuntimeInitArgs));
-  // init.mem_alloc_type = Alloc_With_Allocator;
-  // init.mem_alloc_option.allocator.malloc_func = (void *)os_malloc;
-  // init.mem_alloc_option.allocator.realloc_func = (void *)os_realloc;
-  // init.mem_alloc_option.allocator.free_func = (void *)os_free;
-  // wasm_runtime_full_init(&init);
+  init_symbols(&SYMBOLS, 32);
+  RuntimeInitArgs init;
+  memset(&init, 0, sizeof(RuntimeInitArgs));
+  init.mem_alloc_type = Alloc_With_Allocator;
+  init.mem_alloc_option.allocator.malloc_func = (void *)os_malloc;
+  init.mem_alloc_option.allocator.realloc_func = (void *)os_realloc;
+  init.mem_alloc_option.allocator.free_func = (void *)os_free;
+  wasm_runtime_full_init(&init);
 }
 
 void extism_runtime_cleanup() {
