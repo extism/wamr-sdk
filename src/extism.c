@@ -67,12 +67,21 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
     return ExtismStatusErrNoWasm;
   }
 
-  plugin->instance = wasm_runtime_instantiate(
-      plugin->main, (manifest->memory.stack_size) / 4 * 3,
-      (manifest->memory.heap_size / 4) * 3, errmsg, errlen);
+  plugin->instance =
+      wasm_runtime_instantiate(plugin->main, manifest->memory.stack_size / 2,
+                               manifest->memory.heap_size / 2, errmsg, errlen);
+  if (plugin->instance == NULL) {
+    puts(errmsg);
+    return ExtismStatusErr;
+  }
 
   plugin->exec =
       wasm_exec_env_create(plugin->instance, manifest->memory.stack_size);
+  if (plugin->exec == NULL) {
+    wasm_runtime_deinstantiate(plugin->instance);
+    plugin->instance = NULL;
+    return ExtismStatusErr;
+  }
 
   // Initialize Haskell runtime
   wasm_function_inst_t hs_init =
@@ -243,9 +252,9 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
 ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
                                      const char *func_name, const void *input,
                                      size_t input_length, char **argv, int argc,
-                                     int stdin, int stdout, int stderr) {
+                                     int stdinfd, int stdoutfd, int stderrfd) {
   wasm_runtime_set_wasi_args_ex(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
-                                argc, stdin, stdout, stderr);
+                                argc, stdinfd, stdoutfd, stderrfd);
   return extism_plugin_call(plugin, func_name, input, input_length);
 }
 
@@ -316,7 +325,7 @@ void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
     manifest->memory.heap_size = memory->heap_size;
   } else {
     manifest->memory.stack_size = 8092;
-    manifest->memory.heap_size = 65536 * 10;
+    manifest->memory.heap_size = 65536 * 5;
   }
 
   assert(nwasm <= EXTISM_MAX_LINKED_MODULES);
@@ -337,8 +346,14 @@ void extism_plugin_use_plugin(ExtismPlugin *plugin) {
 }
 
 void extism_runtime_init() {
-  init_symbols(&SYMBOLS, 64);
-  wasm_runtime_init();
+  init_symbols(&SYMBOLS, 32);
+  RuntimeInitArgs init;
+  memset(&init, 0, sizeof(RuntimeInitArgs));
+  init.mem_alloc_type = Alloc_With_Allocator;
+  init.mem_alloc_option.allocator.malloc_func = (void *)os_malloc;
+  init.mem_alloc_option.allocator.realloc_func = (void *)os_realloc;
+  init.mem_alloc_option.allocator.free_func = (void *)os_free;
+  wasm_runtime_full_init(&init);
 }
 
 void extism_runtime_cleanup() {
