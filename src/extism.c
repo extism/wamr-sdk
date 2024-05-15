@@ -324,8 +324,8 @@ void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
     manifest->memory.stack_size = memory->stack_size;
     manifest->memory.heap_size = memory->heap_size;
   } else {
-    manifest->memory.stack_size = 8092;
-    manifest->memory.heap_size = 65536 * 5;
+    manifest->memory.stack_size = 4096 * 2;
+    manifest->memory.heap_size = 65536 * 10;
   }
 
   assert(nwasm <= EXTISM_MAX_LINKED_MODULES);

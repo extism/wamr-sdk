@@ -38,6 +38,9 @@ int main(int argc, char *argv[]) {
   const char *env = getenv("EXTISM_WAMR_LOOP");
   int loop = atoi(env == NULL ? "1" : env);
 
+  const char *num_pages = getenv("EXTISM_WAMR_HEAP_PAGES");
+  int pages = atoi(num_pages == NULL ? "10" : num_pages);
+
   ExtismStatus status;
 
   if (argc < 3) {
@@ -61,7 +64,10 @@ int main(int argc, char *argv[]) {
       .name = NULL,
   };
   ExtismManifest manifest;
-  extism_manifest_init(&manifest, &wasm, 1, NULL, 0, NULL);
+  ExtismMemoryConfig mem;
+  mem.stack_size = 8192;
+  mem.heap_size = 65536 * pages;
+  extism_manifest_init(&manifest, &wasm, 1, NULL, 0, &mem);
 
   // Host functions
   extism_host_function("extism:host/user", "host_reflect", "(I)I", host_reflect,
