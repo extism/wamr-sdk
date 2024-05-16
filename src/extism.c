@@ -347,6 +347,7 @@ void extism_plugin_use_plugin(ExtismPlugin *plugin) {
 
 void extism_runtime_init() {
   init_symbols(&SYMBOLS, 32);
+#ifdef ESP32
   RuntimeInitArgs init;
   memset(&init, 0, sizeof(RuntimeInitArgs));
   init.mem_alloc_type = Alloc_With_Allocator;
@@ -354,6 +355,9 @@ void extism_runtime_init() {
   init.mem_alloc_option.allocator.realloc_func = (void *)os_realloc;
   init.mem_alloc_option.allocator.free_func = (void *)os_free;
   wasm_runtime_full_init(&init);
+#else
+  wasm_runtime_init();
+#endif
 }
 
 void extism_runtime_cleanup() {
