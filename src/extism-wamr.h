@@ -101,6 +101,13 @@ ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
                                      size_t input_length, char **argv, int argc,
                                      int stdinfd, int stdoutfd, int stderrfd);
 
+// Call a function with the given input and host context
+ExtismStatus extism_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                                  const char *func_name,
+                                                  const void *input,
+                                                  size_t input_length,
+                                                  void *ctx);
+
 // Get the output of a plugin
 uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length);
 
@@ -129,6 +136,9 @@ void extism_plugin_memory_free(ExtismPlugin *plugin, ExtismHandle offs);
 
 // Get user-data from inside host functions
 void *extism_host_function_data(ExtismExecEnv *env);
+
+// Get host context from inside a host function
+void *extism_host_context(ExtismExecEnv *env);
 
 // These functions are used to switch context between the kernel and plugin
 // modules in host functions, these shouldn't be needed in most cases.

@@ -224,7 +224,15 @@ static void plugin_reset(ExtismPlugin *plugin) {
 
 ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
                                 const void *input, size_t input_length) {
+  return extism_plugin_call_with_host_context(plugin, func_name, input,
+                                              input_length, NULL);
+}
 
+ExtismStatus extism_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                                  const char *func_name,
+                                                  const void *input,
+                                                  size_t input_length,
+                                                  void *ctx) {
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {
@@ -239,6 +247,13 @@ ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
   wasm_val_t results[] = {{.kind = WASM_I32, .of = {.i32 = 0}}};
 
   uint32_t result_count = wasm_func_get_result_count(f, plugin->instance);
+
+  wasm_global_inst_t host_ctx;
+  if (wasm_runtime_get_export_global_inst(plugin->kernel.instance,
+                                          "extism_context", &host_ctx)) {
+    host_ctx.global_data = ctx;
+  }
+
   extism_plugin_use_plugin(plugin);
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
