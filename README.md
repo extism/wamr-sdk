@@ -4,9 +4,13 @@ A lightweight [WAMR](https://github.com/bytecodealliance/wasm-micro-runtime) bac
 
 Supports a limited set of features compared to [extism/extism](https://github.com/extism/extism):
 
-- Linking multiple Wasm modules
 - Host functions
 - Memory limits
+
+In progress:
+
+- Linking multiple Wasm modules
+
 
 ## Building
 
