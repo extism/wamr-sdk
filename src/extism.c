@@ -7,11 +7,10 @@
 
 // SYMBOLS contains the global runtime symbols, this is reset when
 // `extism_runtime_free` is called
-static NativeSymbol *SYMBOLS = NULL;
+static _Thread_local NativeSymbol *SYMBOLS = NULL;
 
-static ExtismStatus init_plugin(ExtismPlugin *plugin,
-                                const ExtismManifest *manifest, char *errmsg,
-                                size_t errlen) {
+static ExtismStatus init_plugin(ExtismPlugin *plugin, ExtismManifest *manifest,
+                                char *errmsg, size_t errlen) {
   plugin->exec = NULL;
   plugin->instance = NULL;
   plugin->main = NULL;
@@ -100,8 +99,8 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   return ExtismStatusOk;
 }
 
-ExtismPlugin *extism_wamr_plugin_new(const ExtismManifest *manifest,
-                                     char *errmsg, size_t errlen) {
+ExtismPlugin *extism_wamr_plugin_new(ExtismManifest *manifest, char *errmsg,
+                                     size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
   if (plugin == NULL) {
     return NULL;
@@ -226,7 +225,7 @@ void plugin_set_error(ExtismPlugin *plugin, const char *s) {
                                        0, NULL, 1, params));
 }
 
-static void plugin_reset(ExtismPlugin *plugin) {
+void extism_wamr_plugin_reset(ExtismPlugin *plugin) {
   WITH_KERNEL(plugin,
               wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.reset, 0,
                                        NULL, 0, NULL));
@@ -250,7 +249,7 @@ int32_t extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
     return -1;
   }
 
-  plugin_reset(plugin);
+  extism_wamr_plugin_reset(plugin);
   uint64_t input_offs = plugin_alloc(plugin, input, input_length);
   plugin_set_input(plugin, input_offs, input_length);
 

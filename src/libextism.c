@@ -3,6 +3,7 @@
 #include "internal.h"
 
 #include "extism-wamr.h"
+#include "json.h"
 
 // /**
 //  * Get a plugin's ID, the returned bytes are a 16 byte buffer that represent
@@ -83,16 +84,30 @@ void extism_current_plugin_memory_free(ExtismCurrentPlugin *plugin,
 //  * Returns a new `ExtismFunction` or `null` if the `name` argument is
 //  invalid.
 //  */
-// ExtismFunction *
-// extism_function_new(const char *name, const ExtismValType *inputs,
-//                     ExtismSize n_inputs, const ExtismValType *outputs,
-//                     ExtismSize n_outputs, ExtismFunctionType func,
-//                     void *user_data, void (*free_user_data)(void *_));
+
+struct Func {
+  void *user_data;
+  void (*free_user_data)(void *);
+};
+
+static void trampoline(ExtismCurrentPlugin *plugin, const ExtismVal *inputs,
+                       ExtismSize n_inputs, ExtismVal *outputs,
+                       ExtismSize n_outputs, void *data) {}
+
+ExtismFunction *
+extism_function_new(const char *name, const ExtismValType *inputs,
+                    ExtismSize n_inputs, const ExtismValType *outputs,
+                    ExtismSize n_outputs, ExtismFunctionType func,
+                    void *user_data, void (*free_user_data)(void *_)) {
+  // TODO:
+  // extism_host_function("extism:host/env", name, "",
+  return NULL;
+}
 
 // /**
 //  * Free `ExtismFunction`
 //  */
-// void extism_function_free(ExtismFunction *f);
+void extism_function_free(ExtismFunction *f) {}
 
 // /**
 //  * Set the namespace of an `ExtismFunction`
@@ -110,40 +125,76 @@ void extism_current_plugin_memory_free(ExtismCurrentPlugin *plugin,
 //  * `n_functions`: the number of functions provided
 //  * `with_wasi`: enables/disables WASI
 //  */
-// ExtismPlugin *extism_plugin_new(const uint8_t *wasm, ExtismSize wasm_size,
-//                                 const ExtismFunction **functions,
-//                                 ExtismSize n_functions, bool with_wasi,
-//                                 char **errmsg);
+ExtismPlugin *extism_plugin_new(uint8_t *wasm, ExtismSize wasm_size,
+                                const ExtismFunction **functions,
+                                ExtismSize n_functions, bool with_wasi,
+                                char **errmsg) {
+  (void)with_wasi;
+  ExtismManifest manifest;
+  ExtismWasm module = {.data = wasm, .length = wasm_size, .name = NULL};
+  extism_wamr_manifest_init(&manifest, &module, 1, NULL, 0, NULL);
+
+  for (size_t i = 0; i < n_functions; i++) {
+    // TODO:
+    // extism_wamr_host_function("extism:host/user", functions[i]->, , , )
+  }
+
+  char errbuf[1024];
+  ExtismPlugin *plugin = extism_wamr_plugin_new(&manifest, errbuf, 1024);
+  if (plugin == NULL) {
+    if (errmsg) {
+      *errmsg = string_copy(errbuf, strlen(errbuf));
+    }
+    return NULL;
+  }
+  return plugin;
+}
 
 // /**
 //  * Free the error returned by `extism_plugin_new`, errors returned from
 //  * `extism_plugin_error` don't need to be freed
 //  */
-// void extism_plugin_new_error_free(char *err);
+void extism_plugin_new_error_free(char *err) { free(err); }
 
 // /**
 //  * Remove a plugin from the registry and free associated memory
 //  */
 void extism_plugin_free(ExtismPlugin *plugin) {
+  extism_wamr_manifest_cleanup((ExtismManifest *)plugin->manifest);
   extism_wamr_plugin_free(plugin);
 }
 
 // /**
 //  * Get handle for plugin cancellation
 //  */
-// const ExtismCancelHandle *
-// extism_plugin_cancel_handle(const ExtismPlugin *plugin);
+const ExtismCancelHandle *
+extism_plugin_cancel_handle(const ExtismPlugin *plugin) {
+  return (ExtismCancelHandle *)plugin->instance;
+}
 
 // /**
 //  * Cancel a running plugin
 //  */
-// bool extism_plugin_cancel(const ExtismCancelHandle *handle);
+bool extism_plugin_cancel(const ExtismCancelHandle *handle) {
+  wasm_runtime_terminate((wasm_module_inst_t)handle);
+  return true;
+}
 
 // /**
 //  * Update plugin config values.
 //  */
-// bool extism_plugin_config(ExtismPlugin *plugin, const uint8_t *json,
-//                           ExtismSize json_size);
+bool extism_plugin_config(ExtismPlugin *plugin, const uint8_t *json,
+                          ExtismSize json_size) {
+  struct json_value_s *parsed = json_parse(json, json_size);
+  if (parsed == NULL) {
+    return false;
+  }
+
+  // TODO: get keys/values and add them to plugin->manifest config
+
+  free(parsed);
+  return true;
+}
 
 // /**
 //  * Returns true if `func_name` exists
@@ -243,8 +294,8 @@ void extism_log_drain(ExtismLogDrainFunctionType handler) {}
 //  * Reset the Extism runtime, this will invalidate all allocated memory
 //  */
 bool extism_plugin_reset(ExtismPlugin *plugin) {
-  // TODO
-  return false;
+  extism_wamr_plugin_reset(plugin);
+  return true;
 }
 
 /**

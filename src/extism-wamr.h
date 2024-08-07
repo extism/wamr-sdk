@@ -82,8 +82,8 @@ void extism_wamr_runtime_cleanup();
 
 // Create a new plugin from a manifest, the `errbuf` is used to access any error
 // messages returned by WAMR
-ExtismPlugin *extism_wamr_plugin_new(const ExtismManifest *manifest,
-                                     char *errbuf, size_t errlen);
+ExtismPlugin *extism_wamr_plugin_new(ExtismManifest *manifest, char *errbuf,
+                                     size_t errlen);
 
 // Free a plugin
 void extism_wamr_plugin_free(ExtismPlugin *plugin);
@@ -107,6 +107,9 @@ int32_t extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
 
 // Get the output of a plugin
 uint8_t *extism_wamr_plugin_output(ExtismPlugin *plugin, size_t *length);
+
+// Reset Extism kernel
+void extism_wamr_plugin_reset(ExtismPlugin *plugin);
 
 // Get the error result of a plugin
 const char *extism_wamr_plugin_error(ExtismPlugin *plugin, size_t *length);

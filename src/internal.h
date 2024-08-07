@@ -6,6 +6,7 @@
 
 #include "util.h"
 
+#include "json.h"
 #include <assert.h>
 #include <uuid/uuid.h>
 
@@ -40,7 +41,7 @@ struct ExtismKernel {
 
 typedef struct ExtismPlugin {
   ExtismVar *vars;
-  const ExtismManifest *manifest;
+  ExtismManifest *manifest;
   struct ExtismKernel kernel;
   wasm_module_t *modules;
   wasm_module_t main;
