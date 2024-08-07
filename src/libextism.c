@@ -16,35 +16,53 @@ const uint8_t *extism_plugin_id(ExtismPlugin *plugin) { return plugin->id; }
 //  call
 //  * was made without host context.
 //  */
-// void *extism_current_plugin_host_context(ExtismCurrentPlugin *plugin);
+void *extism_current_plugin_host_context(ExtismCurrentPlugin *plugin) {
+  return extism_wamr_plugin_host_context(
+      extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin));
+}
 
 // /**
 //  * Returns a pointer to the memory of the currently running plugin
 //  * NOTE: this should only be called from host functions.
 //  */
-// uint8_t *extism_current_plugin_memory(ExtismCurrentPlugin *plugin);
+uint8_t *extism_current_plugin_memory(ExtismCurrentPlugin *plugin) {
+
+  void *ptr = NULL;
+  ExtismPlugin *p = extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin);
+  WITH_KERNEL(
+      p, { ptr = wasm_runtime_addr_app_to_native(p->kernel.instance, 0); });
+  return ptr;
+}
 
 // /**
 //  * Allocate a memory block in the currently running plugin
 //  * NOTE: this should only be called from host functions.
 //  */
-// ExtismMemoryHandle
-// extism_current_plugin_memory_alloc(ExtismCurrentPlugin *plugin, ExtismSize
-// n);
+ExtismMemoryHandle
+extism_current_plugin_memory_alloc(ExtismCurrentPlugin *plugin, ExtismSize n) {
+  ExtismPlugin *p = extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin);
+  return extism_wamr_plugin_memory_alloc(p, NULL, n);
+}
 
 // /**
 //  * Get the length of an allocated block
 //  * NOTE: this should only be called from host functions.
 //  */
-// ExtismSize extism_current_plugin_memory_length(ExtismCurrentPlugin *plugin,
-//                                                ExtismMemoryHandle n);
+ExtismSize extism_current_plugin_memory_length(ExtismCurrentPlugin *plugin,
+                                               ExtismMemoryHandle n) {
+  ExtismPlugin *p = extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin);
+  return extism_wamr_plugin_memory_length(p, n);
+}
 
 // /**
 //  * Free an allocated memory block
 //  * NOTE: this should only be called from host functions.
 //  */
-// void extism_current_plugin_memory_free(ExtismCurrentPlugin *plugin,
-//                                        ExtismMemoryHandle ptr);
+void extism_current_plugin_memory_free(ExtismCurrentPlugin *plugin,
+                                       ExtismMemoryHandle ptr) {
+  ExtismPlugin *p = extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin);
+  return extism_wamr_plugin_memory_free(p, ptr);
+}
 
 // /**
 //  * Create a new host function
@@ -154,11 +172,14 @@ bool extism_plugin_function_exists(ExtismPlugin *plugin,
 //  * `host_context`: a pointer to context data that will be available in host
 //  * functions
 //  */
-// int32_t extism_plugin_call_with_host_context(ExtismPlugin *plugin,
-//                                              const char *func_name,
-//                                              const uint8_t *data,
-//                                              ExtismSize data_len,
-//                                              void *host_context);
+int32_t extism_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                             const char *func_name,
+                                             const uint8_t *data,
+                                             ExtismSize data_len,
+                                             void *host_context) {
+  return extism_wamr_plugin_call_with_host_context(plugin, func_name, data,
+                                                   data_len, host_context);
+}
 
 // /**
 //  * Get the error associated with a `Plugin`

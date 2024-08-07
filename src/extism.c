@@ -29,7 +29,7 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   {.symbol = #name,                                                            \
    .signature = args,                                                          \
    .func_ptr = k_##name,                                                       \
-   .attachment = plugin}
+   .attachment = calloc(1, sizeof(struct UserData))}
   NativeSymbol kernel[] = {
       FN(alloc, "(I)I"),           FN(free, "(I)"),
       FN(output_set, "(II)"),      FN(output_length, "()I"),
@@ -69,7 +69,6 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   }
 
   if (plugin->main == NULL) {
-    puts("NO MAIN");
     return ExtismStatusErrNoWasm;
   }
 
@@ -233,23 +232,22 @@ static void plugin_reset(ExtismPlugin *plugin) {
                                        NULL, 0, NULL));
 }
 
-ExtismStatus extism_wamr_plugin_call(ExtismPlugin *plugin,
-                                     const char *func_name, const void *input,
-                                     size_t input_length) {
+int32_t extism_wamr_plugin_call(ExtismPlugin *plugin, const char *func_name,
+                                const void *input, size_t input_length) {
   return extism_wamr_plugin_call_with_host_context(plugin, func_name, input,
                                                    input_length, NULL);
 }
 
-ExtismStatus extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
-                                                       const char *func_name,
-                                                       const void *input,
-                                                       size_t input_length,
-                                                       void *ctx) {
+int32_t extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                                  const char *func_name,
+                                                  const void *input,
+                                                  size_t input_length,
+                                                  void *ctx) {
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {
     plugin_set_error(plugin, "Function is undefined");
-    return ExtismStatusErrUndefined;
+    return -1;
   }
 
   plugin_reset(plugin);
@@ -267,21 +265,32 @@ ExtismStatus extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
   }
 
   extism_wamr_plugin_use_plugin(plugin);
+  for (size_t i = 0; i < ARRAY_LENGTH(SYMBOLS); i++) {
+    ((struct UserData *)(SYMBOLS[i].attachment))->plugin = plugin;
+  }
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
     plugin_set_error(plugin, wasm_runtime_get_exception(plugin->instance));
     return ExtismStatusCallFailed;
   }
 
-  return ExtismStatusOk;
+  return results[0].of.i32;
 }
 
-ExtismStatus extism_wamr_plugin_call_wasi(ExtismPlugin *plugin,
-                                          const char *func_name,
-                                          const void *input,
-                                          size_t input_length, char **argv,
-                                          int argc, int stdinfd, int stdoutfd,
-                                          int stderrfd) {
+void *extism_wamr_plugin_host_context(ExtismPlugin *plugin) {
+  wasm_global_inst_t host_ctx;
+  if (wasm_runtime_get_export_global_inst(plugin->kernel.instance,
+                                          "extism_context", &host_ctx)) {
+    return host_ctx.global_data;
+  }
+
+  return NULL;
+}
+
+int32_t extism_wamr_plugin_call_wasi(ExtismPlugin *plugin,
+                                     const char *func_name, const void *input,
+                                     size_t input_length, char **argv, int argc,
+                                     int stdinfd, int stdoutfd, int stderrfd) {
   wasm_runtime_set_wasi_args_ex(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
                                 argc, stdinfd, stdoutfd, stderrfd);
   return extism_wamr_plugin_call(plugin, func_name, input, input_length);
@@ -313,7 +322,9 @@ void extism_wamr_host_function(const char *module, const char *name,
                                void *user_data) {
   NativeSymbol f;
   f.symbol = name;
-  f.attachment = user_data;
+  f.attachment = calloc(1, sizeof(struct UserData));
+  assert(f.attachment);
+  ((struct UserData *)f.attachment)->user = user_data;
   f.func_ptr = func;
   f.signature = signature;
   wasm_runtime_register_natives(module, add_symbols(&SYMBOLS, &f, 1), 1);
@@ -391,7 +402,7 @@ void extism_wamr_plugin_use_plugin(ExtismPlugin *plugin) {
 }
 
 void extism_wamr_runtime_init() {
-  SYMBOLS = array_new(sizeof(NativeSymbol), 32);
+  init_symbols(&SYMBOLS, 32);
 #ifdef ESP32
   RuntimeInitArgs init;
   memset(&init, 0, sizeof(RuntimeInitArgs));
@@ -410,8 +421,16 @@ void extism_wamr_runtime_cleanup() {
   reset_symbols(&SYMBOLS);
 }
 
-void *extism_host_function_data(ExtismExecEnv *env) {
-  return wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
+void *extism_wamr_exec_env_data(ExtismExecEnv *env) {
+  struct UserData *inner =
+      wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
+  return inner->user;
+}
+
+ExtismPlugin *extism_wamr_exec_env_plugin(ExtismExecEnv *env) {
+  struct UserData *inner =
+      wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
+  return inner->plugin;
 }
 
 ExtismStatus extism_wamr_wasm_load_file(ExtismWasm *wasm, const char *filename,

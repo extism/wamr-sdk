@@ -32,6 +32,11 @@ NativeSymbol *add_symbols(NativeSymbol **st, const NativeSymbol *sym,
 void reset_symbols(NativeSymbol **s) {
   if (s == NULL)
     return;
+
+  for (size_t i = 0; i < ARRAY_LENGTH((*s)); i++) {
+    free((*s)[i].attachment);
+  }
+
   array_free(*s);
   *s = NULL;
 }

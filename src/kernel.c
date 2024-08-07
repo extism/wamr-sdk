@@ -57,7 +57,8 @@ static void write_u64(void *ptr, uint64_t x) { *(uint64_t *)ptr = x; }
   })
 
 #define KERNEL_INIT(p, k)                                                      \
-  ExtismPlugin *p = wasm_runtime_get_function_attachment(env);                 \
+  ExtismPlugin *p =                                                            \
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;  \
   struct ExtismKernel *k = &p->kernel;
 
 uint64_t k_alloc(wasm_exec_env_t env, uint64_t size) {
@@ -206,7 +207,8 @@ void k_error_set(wasm_exec_env_t env, uint64_t offs) {
 }
 
 uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
-  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  ExtismPlugin *plugin =
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;
   uint64_t len = k_length(env, k);
   if (len == 0) {
     return 0;
@@ -228,7 +230,8 @@ uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
   return 0;
 }
 uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
-  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  ExtismPlugin *plugin =
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;
   uint64_t len = k_length(env, k);
   if (len == 0) {
     return 0;
@@ -250,7 +253,8 @@ uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
   return 0;
 }
 void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
-  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  ExtismPlugin *plugin =
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;
   uint64_t klen = k_length(env, k);
   if (klen == 0) {
     return;
@@ -295,7 +299,8 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
 uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
   (void)req;
   (void)body;
-  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  ExtismPlugin *plugin =
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;
   wasm_runtime_set_exception(plugin->instance,
                              "extism:host/env::http_request not implemented");
   wasm_runtime_terminate(plugin->instance);
@@ -303,7 +308,8 @@ uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
 }
 uint32_t k_http_status_code(wasm_exec_env_t env) {
 
-  ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);
+  ExtismPlugin *plugin =
+      ((struct UserData *)wasm_runtime_get_function_attachment(env))->plugin;
   wasm_runtime_set_exception(
       plugin->instance, "extism:host/env::http_status_code not implemented");
   wasm_runtime_terminate(plugin->instance);
@@ -312,7 +318,9 @@ uint32_t k_http_status_code(wasm_exec_env_t env) {
 
 #define LOG_FN(name, prefix)                                                   \
   void k_log_##name(wasm_exec_env_t env, uint64_t msg) {                       \
-    ExtismPlugin *plugin = wasm_runtime_get_function_attachment(env);          \
+    ExtismPlugin *plugin =                                                     \
+        ((struct UserData *)wasm_runtime_get_function_attachment(env))         \
+            ->plugin;                                                          \
     uint64_t len = k_length(env, msg);                                         \
     if (len == 0)                                                              \
       return;                                                                  \

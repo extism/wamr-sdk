@@ -15,10 +15,10 @@ typedef struct {
   uint8_t ptr[0];
 } ArrayHeader;
 
-#define ARRAY_HEADER(x) ((ArrayHeader *)((uint8_t *)x - sizeof(ArrayHeader)))
-#define ARRAY_LENGTH(x) (ARRAY_HEADER(x)->length)
-#define ARRAY_CAPACITY(x) (ARRAY_HEADER(x)->capacity)
-#define ARRAY_ITEM_SIZE(x) (ARRAY_HEADER(x)->itemSize)
+#define ARRAY_HEADER(x) ((ArrayHeader *)((uint8_t *)(x) - sizeof(ArrayHeader)))
+#define ARRAY_LENGTH(x) ((x) == NULL ? 0 : ARRAY_HEADER(x)->length)
+#define ARRAY_CAPACITY(x) ((x) == NULL ? 0 : ARRAY_HEADER(x)->capacity)
+#define ARRAY_ITEM_SIZE(x) ((x) == NULL ? 0 : ARRAY_HEADER(x)->itemSize)
 
 void *array_new(size_t itemSize, size_t capacity);
 void *array_resize(void *arr, size_t newSize);

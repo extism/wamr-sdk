@@ -89,24 +89,21 @@ ExtismPlugin *extism_wamr_plugin_new(const ExtismManifest *manifest,
 void extism_wamr_plugin_free(ExtismPlugin *plugin);
 
 // Call a function with the given input
-ExtismStatus extism_wamr_plugin_call(ExtismPlugin *plugin,
-                                     const char *func_name, const void *input,
-                                     size_t input_length);
+int32_t extism_wamr_plugin_call(ExtismPlugin *plugin, const char *func_name,
+                                const void *input, size_t input_length);
 
 // Similar to `extism_plugin_call` but allows passing WASI arguments/stdio
-ExtismStatus extism_wamr_plugin_call_wasi(ExtismPlugin *plugin,
-                                          const char *func_name,
-                                          const void *input,
-                                          size_t input_length, char **argv,
-                                          int argc, int stdinfd, int stdoutfd,
-                                          int stderrfd);
+int32_t extism_wamr_plugin_call_wasi(ExtismPlugin *plugin,
+                                     const char *func_name, const void *input,
+                                     size_t input_length, char **argv, int argc,
+                                     int stdinfd, int stdoutfd, int stderrfd);
 
 // Call a function with the given input and host context
-ExtismStatus extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
-                                                       const char *func_name,
-                                                       const void *input,
-                                                       size_t input_length,
-                                                       void *ctx);
+int32_t extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                                  const char *func_name,
+                                                  const void *input,
+                                                  size_t input_length,
+                                                  void *ctx);
 
 // Get the output of a plugin
 uint8_t *extism_wamr_plugin_output(ExtismPlugin *plugin, size_t *length);
@@ -137,10 +134,13 @@ uint64_t extism_wamr_plugin_memory_length(ExtismPlugin *plugin,
 void extism_wamr_plugin_memory_free(ExtismPlugin *plugin, ExtismHandle offs);
 
 // Get user-data from inside host functions
-void *extism_wamr_host_function_data(ExtismExecEnv *env);
+void *extism_wamr_exec_env_data(ExtismExecEnv *env);
+
+// Get user-data from inside host functions
+ExtismPlugin *extism_wamr_exec_env_plugin(ExtismExecEnv *env);
 
 // Get host context from inside a host function
-void *extism_wamr_host_context(ExtismExecEnv *env);
+void *extism_wamr_plugin_host_context(ExtismPlugin *env);
 
 // These functions are used to switch context between the kernel and plugin
 // modules in host functions, these shouldn't be needed in most cases.
