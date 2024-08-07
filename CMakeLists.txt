@@ -96,7 +96,7 @@ target_sources(extism_wamr PUBLIC
   src/libextism.c
   ${WAMR_RUNTIME_LIB_SOURCE}
 )
-target_link_libraries (extism_wamr m)
+target_link_libraries (extism_wamr m uuid)
 if(MSVC)
   target_compile_options(extism_wamr PRIVATE /W4 /WX)
 else()

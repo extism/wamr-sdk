@@ -3,7 +3,6 @@
 #include "internal.h"
 
 #include "extism-wamr.h"
-#include "wasm-micro-runtime/core/iwasm/include/wasm_export.h"
 
 // /**
 //  * Get a plugin's ID, the returned bytes are a 16 byte buffer that represent
