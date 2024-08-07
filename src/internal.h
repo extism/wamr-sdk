@@ -7,6 +7,7 @@
 #include "util.h"
 
 #include <assert.h>
+#include <uuid/uuid.h>
 
 struct ExtismKernel {
   wasm_module_t module;
@@ -40,6 +41,7 @@ typedef struct ExtismPlugin {
   wasm_module_t main;
   wasm_exec_env_t exec;
   wasm_module_inst_t instance;
+  uuid_t id;
 } ExtismPlugin;
 
 void init_kernel(struct ExtismKernel *kernel, const ExtismMemoryConfig *memory);

@@ -1,12 +1,16 @@
 #include "libextism.h"
 #include "./config.h"
+#include "internal.h"
+
+#include "extism-wamr.h"
+#include "wasm-micro-runtime/core/iwasm/include/wasm_export.h"
 
 // /**
 //  * Get a plugin's ID, the returned bytes are a 16 byte buffer that represent
 //  a
 //  * UUIDv4
 //  */
-// const uint8_t *extism_plugin_id(ExtismPlugin *plugin);
+const uint8_t *extism_plugin_id(ExtismPlugin *plugin) { return plugin->id; }
 
 // /**
 //  * Get the current plugin's associated host context data. Returns null if
@@ -103,7 +107,9 @@
 // /**
 //  * Remove a plugin from the registry and free associated memory
 //  */
-// void extism_plugin_free(ExtismPlugin *plugin);
+void extism_plugin_free(ExtismPlugin *plugin) {
+  extism_wamr_plugin_free(plugin);
+}
 
 // /**
 //  * Get handle for plugin cancellation
@@ -125,8 +131,10 @@
 // /**
 //  * Returns true if `func_name` exists
 //  */
-// bool extism_plugin_function_exists(ExtismPlugin *plugin, const char
-// *func_name);
+bool extism_plugin_function_exists(ExtismPlugin *plugin,
+                                   const char *func_name) {
+  return wasm_runtime_lookup_function(plugin->instance, func_name) != NULL;
+}
 
 // /**
 //  * Call a function
@@ -156,22 +164,36 @@
 // /**
 //  * Get the error associated with a `Plugin`
 //  */
-// const char *extism_error(ExtismPlugin *plugin);
+const char *extism_error(ExtismPlugin *plugin) {
+  size_t n = 0;
+  return extism_wamr_plugin_error(plugin, &n);
+}
 
 // /**
 //  * Get the error associated with a `Plugin`
 //  */
-// const char *extism_plugin_error(ExtismPlugin *plugin);
+const char *extism_plugin_error(ExtismPlugin *plugin) {
+  return extism_error(plugin);
+}
 
 // /**
 //  * Get the length of a plugin's output data
 //  */
-// ExtismSize extism_plugin_output_length(ExtismPlugin *plugin);
+ExtismSize extism_plugin_output_length(ExtismPlugin *plugin) {
+  size_t len = 0;
+  if (extism_wamr_plugin_output(plugin, &len) == NULL) {
+    return 0;
+  }
+  return len;
+}
 
 // /**
 //  * Get a pointer to the output data
 //  */
-// const uint8_t *extism_plugin_output_data(ExtismPlugin *plugin);
+const uint8_t *extism_plugin_output_data(ExtismPlugin *plugin) {
+  size_t len = 0;
+  return extism_wamr_plugin_output(plugin, &len);
+}
 
 // /**
 //  * Set log file and level.
@@ -180,25 +202,30 @@
 //  * complex filter like `extism=trace,cranelift=debug`
 //  * The file will be created if it doesn't exist.
 //  */
-// bool extism_log_file(const char *filename, const char *log_level);
+bool extism_log_file(const char *filename, const char *log_level) {
+  return false;
+}
 
 // /**
 //  * Enable a custom log handler, this will buffer logs until
 //  `extism_log_drain`
 //  * is called Log level should be one of: info, error, trace, debug, warn
 //  */
-// bool extism_log_custom(const char *log_level);
+bool extism_log_custom(const char *log_level) { return false; }
 
 // /**
 //  * Calls the provided callback function for each buffered log line.
 //  * This is only needed when `extism_log_custom` is used.
 //  */
-// void extism_log_drain(ExtismLogDrainFunctionType handler);
+void extism_log_drain(ExtismLogDrainFunctionType handler) {}
 
 // /**
 //  * Reset the Extism runtime, this will invalidate all allocated memory
 //  */
-// bool extism_plugin_reset(ExtismPlugin *plugin);
+bool extism_plugin_reset(ExtismPlugin *plugin) {
+  // TODO
+  return false;
+}
 
 /**
  * Get the Extism version string

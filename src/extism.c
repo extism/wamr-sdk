@@ -3,6 +3,7 @@
 #include "util.h"
 
 #include <string.h>
+#include <uuid/uuid.h>
 
 // SYMBOLS contains the global runtime symbols, this is reset when
 // `extism_runtime_free` is called
@@ -18,6 +19,8 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   plugin->modules =
       array_new(sizeof(wasm_module_t), ARRAY_LENGTH(manifest->wasm));
   plugin->manifest = manifest;
+
+  uuid_generate_random(plugin->id);
 
   // Initialize kernel
   init_kernel(&plugin->kernel, &manifest->memory);
