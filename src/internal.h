@@ -77,15 +77,10 @@ void plugin_set_error(ExtismPlugin *plugin, const char *s);
 uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size);
 
 #define WITH_KERNEL(plugin, x)                                                 \
-  extism_plugin_use_kernel(plugin);                                            \
+  extism_wamr_plugin_use_kernel(plugin);                                       \
   x;                                                                           \
-  extism_plugin_use_plugin(plugin);
+  extism_wamr_plugin_use_plugin(plugin);
 
-struct Symbols {
-  NativeSymbol *symbols;
-  size_t length, capacity;
-};
-
-void init_symbols(struct Symbols *symbols, size_t total);
-NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym, size_t n);
-void reset_symbols(struct Symbols *s);
+void init_symbols(NativeSymbol **symbols, size_t total);
+NativeSymbol *add_symbols(NativeSymbol **s, const NativeSymbol *sym, size_t n);
+void reset_symbols(NativeSymbol **s);

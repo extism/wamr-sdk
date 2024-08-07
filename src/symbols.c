@@ -1,37 +1,37 @@
 #include "internal.h"
 #include <stdlib.h>
 
-void init_symbols(struct Symbols *sym, size_t total) {
-  if (sym->capacity != 0 && sym->symbols != NULL) {
-    sym->length = 0;
-    if (sym->capacity >= total) {
-      return;
-    }
-    free(sym->symbols);
+void init_symbols(NativeSymbol **sym, size_t total) {
+  if (sym == NULL) {
+    return;
   }
 
-  sym->symbols = os_malloc(total * sizeof(NativeSymbol));
-  assert(sym->symbols);
-  sym->capacity = total;
-  sym->length = 0;
+  NativeSymbol *tmp = *sym;
+  if (tmp != NULL && ARRAY_CAPACITY(tmp) != 0) {
+    array_free(tmp);
+  }
+
+  tmp = array_new(sizeof(NativeSymbol), total);
+  assert(tmp);
+  *sym = tmp;
 }
 
-NativeSymbol *add_symbols(struct Symbols *s, const NativeSymbol *sym,
+NativeSymbol *add_symbols(NativeSymbol **st, const NativeSymbol *sym,
                           size_t n) {
-  if (s->length == s->capacity) {
-    void *ptr =
-        realloc(s->symbols, (s->capacity + (n * 2)) * sizeof(NativeSymbol));
-    assert(ptr);
-    s->symbols = ptr;
+  if (st == NULL) {
+    return NULL;
   }
-  memcpy(&s->symbols[s->length], sym, sizeof(NativeSymbol) * n);
-  s->length += n;
-  return &s->symbols[s->length - n];
+  NativeSymbol *s = *st;
+  for (size_t i = 0; i < n; i++) {
+    s = array_push(s, &sym[i]);
+  }
+  *st = s;
+  return &s[ARRAY_LENGTH(s) - n];
 }
 
-void reset_symbols(struct Symbols *s) {
-  os_free(s->symbols);
-  s->symbols = NULL;
-  s->length = 0;
-  s->capacity = 0;
+void reset_symbols(NativeSymbol **s) {
+  if (s == NULL)
+    return;
+  array_free(*s);
+  *s = NULL;
 }

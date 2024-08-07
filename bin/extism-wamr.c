@@ -10,6 +10,7 @@ uint64_t host_reflect(ExtismExecEnv *env, uint64_t x) { return x; }
 int main(int argc, char *argv[]) {
   size_t len = 0;
   char errbuf[1024];
+  int rc = 0;
 
   // Setup loop
   const char *env = getenv("EXTISM_WAMR_LOOP");
@@ -26,10 +27,10 @@ int main(int argc, char *argv[]) {
   }
 
   ExtismWasm wasm;
-  extism_wasm_load_file(&wasm, argv[1], NULL);
+  extism_wamr_wasm_load_file(&wasm, argv[1], NULL);
 
   // Initialize the runtime, this must be done before a plugin can be created
-  extism_runtime_init();
+  extism_wamr_runtime_init();
 
   // Specify the modules to be loaded, setting `name` to `NULL` marks a module
   // at the main module
@@ -37,21 +38,20 @@ int main(int argc, char *argv[]) {
   ExtismMemoryConfig mem;
   mem.stack_size = 8192;
   mem.heap_size = 65536 * pages;
-  extism_manifest_init(&manifest, &wasm, 1, NULL, 0, &mem);
+  extism_wamr_manifest_init(&manifest, &wasm, 1, NULL, 0, &mem);
 
   // Host functions
-  extism_host_function("extism:host/user", "host_reflect", "(I)I", host_reflect,
-                       NULL);
+  extism_wamr_host_function("extism:host/user", "host_reflect", "(I)I",
+                            host_reflect, NULL);
 
   // Create the plugin
-  ExtismPlugin *plugin = extism_plugin_new(&manifest, errbuf, 1024);
+  ExtismPlugin *plugin = extism_wamr_plugin_new(&manifest, errbuf, 1024);
   if (plugin == NULL) {
     fputs("ERROR: ", stderr);
     fputs(errbuf, stderr);
     fputs("\n", stderr);
-    extism_wasm_cleanup(&wasm);
-    extism_runtime_cleanup();
-    return 1;
+    rc = 1;
+    goto cleanup;
   }
 
   const char *input = argc > 3 ? argv[3] : "";
@@ -59,16 +59,16 @@ int main(int argc, char *argv[]) {
 
   for (int i = 0; i < loop; i++) {
     // Call a function
-    if ((status = extism_plugin_call(plugin, argv[2], (const void *)input,
-                                     input_len)) != ExtismStatusOk) {
+    if ((status = extism_wamr_plugin_call(plugin, argv[2], (const void *)input,
+                                          input_len)) != ExtismStatusOk) {
       // Print error if it fails
-      const char *s = extism_plugin_error(plugin, &len);
+      const char *s = extism_wamr_plugin_error(plugin, &len);
       fprintf(stderr, "ERROR(%d): ", status);
       fwrite(s, len, 1, stderr);
       fputc('\n', stderr);
     } else {
       // Otherwise print the output
-      uint8_t *output = extism_plugin_output(plugin, &len);
+      uint8_t *output = extism_wamr_plugin_output(plugin, &len);
       if (len > 0) {
         fwrite(output, len, 1, stdout);
         fputc('\n', stdout);
@@ -77,9 +77,11 @@ int main(int argc, char *argv[]) {
   }
 
   // Cleanup
-  extism_plugin_free(plugin);
-  extism_runtime_cleanup();
-  extism_manifest_cleanup(&manifest);
-  extism_wasm_cleanup(&wasm);
-  return 0;
+cleanup:
+  if (plugin)
+    extism_wamr_plugin_free(plugin);
+  extism_wamr_runtime_cleanup();
+  extism_wamr_manifest_cleanup(&manifest);
+  extism_wamr_wasm_cleanup(&wasm);
+  return rc;
 }

@@ -6,7 +6,7 @@
 
 // SYMBOLS contains the global runtime symbols, this is reset when
 // `extism_runtime_free` is called
-static struct Symbols SYMBOLS = {.capacity = 0, .length = 0};
+static NativeSymbol *SYMBOLS = NULL;
 
 static ExtismStatus init_plugin(ExtismPlugin *plugin,
                                 const ExtismManifest *manifest, char *errmsg,
@@ -98,14 +98,14 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   return ExtismStatusOk;
 }
 
-ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
-                                size_t errlen) {
+ExtismPlugin *extism_wamr_plugin_new(const ExtismManifest *manifest,
+                                     char *errmsg, size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
   if (plugin == NULL) {
     return NULL;
   }
   if (init_plugin(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
-    extism_plugin_free(plugin);
+    extism_wamr_plugin_free(plugin);
     return NULL;
   }
   return plugin;
@@ -150,7 +150,7 @@ static void cleanup_plugin(ExtismPlugin *plugin) {
   cleanup_kernel(&plugin->kernel);
 }
 
-void extism_plugin_free(ExtismPlugin *plugin) {
+void extism_wamr_plugin_free(ExtismPlugin *plugin) {
   cleanup_plugin(plugin);
   os_free(plugin);
 }
@@ -158,7 +158,7 @@ void extism_plugin_free(ExtismPlugin *plugin) {
 uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = size}}};
   wasm_val_t results[] = {{.kind = WASM_I64, .of = {.i64 = 0}}};
-  extism_plugin_use_kernel(plugin);
+  extism_wamr_plugin_use_kernel(plugin);
   assert(wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.alloc, 1,
                                   results, 1, params));
   uint64_t offset = results[0].of.i64;
@@ -167,10 +167,10 @@ uint64_t plugin_alloc(ExtismPlugin *plugin, const void *s, size_t size) {
   }
 
   if (s) {
-    memcpy(extism_plugin_memory(plugin, offset), s, size);
+    memcpy(extism_wamr_plugin_memory(plugin, offset), s, size);
   }
 
-  extism_plugin_use_plugin(plugin);
+  extism_wamr_plugin_use_plugin(plugin);
   return offset;
 }
 
@@ -230,17 +230,18 @@ static void plugin_reset(ExtismPlugin *plugin) {
                                        NULL, 0, NULL));
 }
 
-ExtismStatus extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
-                                const void *input, size_t input_length) {
-  return extism_plugin_call_with_host_context(plugin, func_name, input,
-                                              input_length, NULL);
+ExtismStatus extism_wamr_plugin_call(ExtismPlugin *plugin,
+                                     const char *func_name, const void *input,
+                                     size_t input_length) {
+  return extism_wamr_plugin_call_with_host_context(plugin, func_name, input,
+                                                   input_length, NULL);
 }
 
-ExtismStatus extism_plugin_call_with_host_context(ExtismPlugin *plugin,
-                                                  const char *func_name,
-                                                  const void *input,
-                                                  size_t input_length,
-                                                  void *ctx) {
+ExtismStatus extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
+                                                       const char *func_name,
+                                                       const void *input,
+                                                       size_t input_length,
+                                                       void *ctx) {
   wasm_function_inst_t f =
       wasm_runtime_lookup_function(plugin->instance, func_name);
   if (f == NULL) {
@@ -262,7 +263,7 @@ ExtismStatus extism_plugin_call_with_host_context(ExtismPlugin *plugin,
     host_ctx.global_data = ctx;
   }
 
-  extism_plugin_use_plugin(plugin);
+  extism_wamr_plugin_use_plugin(plugin);
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
     plugin_set_error(plugin, wasm_runtime_get_exception(plugin->instance));
@@ -272,16 +273,18 @@ ExtismStatus extism_plugin_call_with_host_context(ExtismPlugin *plugin,
   return ExtismStatusOk;
 }
 
-ExtismStatus extism_plugin_call_wasi(ExtismPlugin *plugin,
-                                     const char *func_name, const void *input,
-                                     size_t input_length, char **argv, int argc,
-                                     int stdinfd, int stdoutfd, int stderrfd) {
+ExtismStatus extism_wamr_plugin_call_wasi(ExtismPlugin *plugin,
+                                          const char *func_name,
+                                          const void *input,
+                                          size_t input_length, char **argv,
+                                          int argc, int stdinfd, int stdoutfd,
+                                          int stderrfd) {
   wasm_runtime_set_wasi_args_ex(plugin->main, NULL, 0, NULL, 0, NULL, 0, argv,
                                 argc, stdinfd, stdoutfd, stderrfd);
-  return extism_plugin_call(plugin, func_name, input, input_length);
+  return extism_wamr_plugin_call(plugin, func_name, input, input_length);
 }
 
-uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length) {
+uint8_t *extism_wamr_plugin_output(ExtismPlugin *plugin, size_t *length) {
   if (length) {
     *length = plugin_output_length(plugin);
   }
@@ -289,7 +292,7 @@ uint8_t *extism_plugin_output(ExtismPlugin *plugin, size_t *length) {
   return wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
 }
 
-const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length) {
+const char *extism_wamr_plugin_error(ExtismPlugin *plugin, size_t *length) {
   uint64_t offs = plugin_error(plugin);
   if (offs == 0) {
     return NULL;
@@ -302,8 +305,9 @@ const char *extism_plugin_error(ExtismPlugin *plugin, size_t *length) {
 }
 
 // Adds a function to `SYMBOLS`
-void extism_host_function(const char *module, const char *name,
-                          const char *signature, void *func, void *user_data) {
+void extism_wamr_host_function(const char *module, const char *name,
+                               const char *signature, void *func,
+                               void *user_data) {
   NativeSymbol f;
   f.symbol = name;
   f.attachment = user_data;
@@ -313,7 +317,7 @@ void extism_host_function(const char *module, const char *name,
 }
 
 // Get host pointer
-void *extism_plugin_memory(ExtismPlugin *plugin, uint64_t offs) {
+void *extism_wamr_plugin_memory(ExtismPlugin *plugin, uint64_t offs) {
   void *ptr = NULL;
   WITH_KERNEL(plugin, {
     ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, offs);
@@ -322,27 +326,28 @@ void *extism_plugin_memory(ExtismPlugin *plugin, uint64_t offs) {
 }
 
 // Allocate Extism memory
-uint64_t extism_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
-                                    size_t size) {
+uint64_t extism_wamr_plugin_memory_alloc(ExtismPlugin *plugin, void *data,
+                                         size_t size) {
   return plugin_alloc(plugin, data, size);
 }
 
 // Get length of allocation in Extism memory
-uint64_t extism_plugin_memory_length(ExtismPlugin *plugin, uint64_t offs) {
+uint64_t extism_wamr_plugin_memory_length(ExtismPlugin *plugin, uint64_t offs) {
   return plugin_length(plugin, offs);
 }
 
 // Allocate Extism memory
-void extism_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs) {
+void extism_wamr_plugin_memory_free(ExtismPlugin *plugin, uint64_t offs) {
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   WITH_KERNEL(plugin,
               wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.length, 0,
                                        NULL, 1, params));
 }
 
-void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
-                          size_t nwasm, const ExtismConfig *config,
-                          size_t nconfig, const ExtismMemoryConfig *memory) {
+void extism_wamr_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
+                               size_t nwasm, const ExtismConfig *config,
+                               size_t nconfig,
+                               const ExtismMemoryConfig *memory) {
   if (memory) {
     manifest->memory.stack_size = memory->stack_size;
     manifest->memory.heap_size = memory->heap_size;
@@ -364,7 +369,7 @@ void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
   }
 }
 
-void extism_manifest_cleanup(ExtismManifest *manifest) {
+void extism_wamr_manifest_cleanup(ExtismManifest *manifest) {
   if (manifest->config) {
     array_free(manifest->config);
   }
@@ -374,16 +379,16 @@ void extism_manifest_cleanup(ExtismManifest *manifest) {
   }
 }
 
-void extism_plugin_use_kernel(ExtismPlugin *plugin) {
+void extism_wamr_plugin_use_kernel(ExtismPlugin *plugin) {
   wasm_runtime_set_module_inst(plugin->exec, plugin->kernel.instance);
 }
 
-void extism_plugin_use_plugin(ExtismPlugin *plugin) {
+void extism_wamr_plugin_use_plugin(ExtismPlugin *plugin) {
   wasm_runtime_set_module_inst(plugin->exec, plugin->instance);
 }
 
-void extism_runtime_init() {
-  init_symbols(&SYMBOLS, 32);
+void extism_wamr_runtime_init() {
+  SYMBOLS = array_new(sizeof(NativeSymbol), 32);
 #ifdef ESP32
   RuntimeInitArgs init;
   memset(&init, 0, sizeof(RuntimeInitArgs));
@@ -397,7 +402,7 @@ void extism_runtime_init() {
 #endif
 }
 
-void extism_runtime_cleanup() {
+void extism_wamr_runtime_cleanup() {
   wasm_runtime_destroy();
   reset_symbols(&SYMBOLS);
 }
@@ -406,8 +411,8 @@ void *extism_host_function_data(ExtismExecEnv *env) {
   return wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
 }
 
-ExtismStatus extism_wasm_load_file(ExtismWasm *wasm, const char *filename,
-                                   const char *name) {
+ExtismStatus extism_wamr_wasm_load_file(ExtismWasm *wasm, const char *filename,
+                                        const char *name) {
   size_t len = 0;
   uint8_t *data = read_file(filename, &len);
   if (data == NULL) {
@@ -420,7 +425,7 @@ ExtismStatus extism_wasm_load_file(ExtismWasm *wasm, const char *filename,
       name == NULL ? string_copy("main", 4) : string_copy(name, strlen(name));
   return ExtismStatusOk;
 }
-void extism_wasm_cleanup(ExtismWasm *wasm) {
+void extism_wamr_wasm_cleanup(ExtismWasm *wasm) {
   if (wasm->data) {
     os_free(wasm->data);
   }

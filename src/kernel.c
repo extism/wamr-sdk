@@ -50,7 +50,7 @@ static void write_u64(void *ptr, uint64_t x) { *(uint64_t *)ptr = x; }
     if (!x) {                                                                  \
       const char *s = wasm_runtime_get_exception(kernel->instance);            \
       plugin_set_error(plugin, s);                                             \
-      extism_plugin_use_plugin(plugin);                                        \
+      extism_wamr_plugin_use_plugin(plugin);                                   \
       wasm_runtime_set_exception(plugin->instance, s);                         \
       wasm_runtime_terminate(plugin->instance);                                \
     }                                                                          \
@@ -149,7 +149,7 @@ uint64_t k_input_offset(wasm_exec_env_t env) {
 uint32_t k_load_u8(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, offs);
   return ptr[0];
 }
 
@@ -157,14 +157,14 @@ uint32_t k_input_load_u8(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   uint64_t x = k_input_offset(env);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, x + offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, x + offs);
   return ptr[0];
 }
 
 uint64_t k_load_u64(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, offs);
   return read_u64(ptr);
 }
 
@@ -172,21 +172,21 @@ uint64_t k_input_load_u64(wasm_exec_env_t env, uint64_t offs) {
   KERNEL_INIT(plugin, kernel);
   uint64_t input_offs = k_input_offset(env);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, input_offs + offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, input_offs + offs);
   return read_u64(ptr);
 }
 
 void k_store_u8(wasm_exec_env_t env, uint64_t offs, uint32_t ch) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, offs);
   ptr[0] = (uint8_t)ch;
 }
 
 void k_store_u64(wasm_exec_env_t env, uint64_t offs, uint64_t v) {
   KERNEL_INIT(plugin, kernel);
   (void)kernel;
-  uint8_t *ptr = extism_plugin_memory(plugin, offs);
+  uint8_t *ptr = extism_wamr_plugin_memory(plugin, offs);
   write_u64(ptr, v);
 }
 
