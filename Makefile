@@ -18,3 +18,6 @@ clean:
 
 extism-wamr:
 	git submodule update --init
+
+json:
+	curl https://raw.githubusercontent.com/sheredom/json.h/master/json.h > src/json.h
