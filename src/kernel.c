@@ -217,7 +217,7 @@ uint64_t k_config_get(wasm_exec_env_t env, uint64_t k) {
     ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, k);
   });
 
-  for (size_t i = 0; i < plugin->manifest->config_count; i++) {
+  for (size_t i = 0; i < ARRAY_LENGTH(plugin->manifest->config); i++) {
     if (strlen(plugin->manifest->config[i].key) == len &&
         strncmp(plugin->manifest->config[i].key, ptr, len) == 0) {
       return plugin_alloc(plugin, plugin->manifest->config[i].value,
@@ -239,7 +239,7 @@ uint64_t k_var_get(wasm_exec_env_t env, uint64_t k) {
     ptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, k);
   });
 
-  for (size_t i = 0; i < plugin->var_count; i++) {
+  for (size_t i = 0; i < ARRAY_LENGTH(plugin->vars); i++) {
     if (strlen(plugin->vars[i].key) == len &&
         strncmp(plugin->vars[i].key, ptr, len) == 0) {
       return plugin_alloc(plugin, plugin->vars[i].value,
@@ -267,7 +267,7 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
     vptr = wasm_runtime_addr_app_to_native(plugin->kernel.instance, v);
   });
 
-  for (size_t i = 0; i < plugin->var_count; i++) {
+  for (size_t i = 0; i < ARRAY_LENGTH(plugin->vars); i++) {
     if (strlen(plugin->vars[i].key) == klen &&
         strncmp(plugin->vars[i].key, ptr, klen) == 0) {
       if (plugin->vars[i].length != vlen) {
@@ -280,19 +280,18 @@ void k_var_set(wasm_exec_env_t env, uint64_t k, uint64_t v) {
     }
   }
 
-  if (plugin->var_count < EXTISM_MAX_CONFIG) {
-    plugin->vars[plugin->var_count].key = os_malloc(klen + 1);
-    memcpy(plugin->vars[plugin->var_count].key, ptr, klen);
-    plugin->vars[plugin->var_count].key[klen] = '\0';
-    plugin->vars[plugin->var_count].value = os_malloc(vlen);
-    memcpy(plugin->vars[plugin->var_count].value, vptr, vlen);
-    plugin->vars[plugin->var_count].length = vlen;
-    plugin->var_count += 1;
-  } else {
-    wasm_runtime_set_exception(plugin->instance, "Variable store is full");
-    wasm_runtime_terminate(plugin->instance);
-  }
+  ExtismVar newVar = {
+      .key = os_malloc(klen + 1), .value = os_malloc(vlen), .length = vlen};
+
+  assert(newVar.key);
+  assert(newVar.value);
+
+  memcpy(newVar.key, ptr, klen);
+  memcpy(newVar.value, vptr, vlen);
+
+  plugin->vars = array_push(plugin->vars, &newVar);
 }
+
 uint64_t k_http_request(wasm_exec_env_t env, uint64_t req, uint64_t body) {
   (void)req;
   (void)body;

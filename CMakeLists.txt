@@ -13,16 +13,20 @@ if(ESP_PLATFORM)
 endif()
 
 
-project(extism-wamr)
+project(extism_wamr)
 enable_testing()
+project(extism_wamr VERSION 0.1)
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
+               "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
 
 # Configure WAMR
 
 if(NOT DEFINED WAMR_BUILD_TARGET)
   if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64")
-    set (WAMR_BUILD_TARGET "aarch64")
+    set (WAMR_BUILD_TARGET "AARCH64")
   else()
-    set (WAMR_BUILD_TARGET ${CMAKE_SYSTEM_PROCESSOR})
+    string(TOUPPER ${CMAKE_SYSTEM_PROCESSOR} WAMR_BUILD_TARGET)
   endif()
 endif()
 
@@ -44,6 +48,15 @@ if (NOT DEFINED WAMR_BUILD_FAST_INTERP)
 set (WAMR_BUILD_FAST_INTERP 1)
 endif()
 
+if (NOT DEFINED WAMR_BUILD_FAST_JIT)
+set (WAMR_BUILD_FAST_JIT 0)
+endif()
+
+if (NOT DEFINED WAMR_BUILD_JIT)
+set (WAMR_BUILD_JIT 0)
+endif()
+
+
 if (NOT DEFINED WAMR_BUILD_LIBC_BUILTIN)
 set (WAMR_BUILD_LIBC_BUILTIN 1)
 endif()
@@ -60,6 +73,10 @@ if (NOT DEFINED WAMR_BUILD_GC)
 set (WAMR_BUILD_GC 1)
 endif()
 
+if (NOT DEFINED WAMR_BUILD_REFERENCE_TYPES)
+set (WAMR_BUILD_REFERENCE_TYPES 1)
+endif()
+
 # Multi-module is required
 set (WAMR_BUILD_MULTI_MODULE 1)
 
@@ -67,35 +84,43 @@ set (WAMR_ROOT_DIR wasm-micro-runtime)
 
 
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
-add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
-# extism-wamr
- 
-add_library (extism-wamr STATIC src/symbols.c src/kernel.c src/extism.c)
-target_link_libraries (extism-wamr vmlib m)
+# extism_wamr
+
+add_library (extism_wamr) 
+target_sources(extism_wamr PUBLIC 
+  src/util.c
+  src/kernel.c
+  src/symbols.c
+  src/extism.c
+  src/libextism.c
+  ${WAMR_RUNTIME_LIB_SOURCE}
+)
+target_link_libraries (extism_wamr m)
 if(MSVC)
-  target_compile_options(extism-wamr PRIVATE /W4 /WX)
+  target_compile_options(extism_wamr PRIVATE /W4 /WX)
 else()
-  target_compile_options(extism-wamr PRIVATE -Wall -Wextra -Werror)
+  target_compile_options(extism_wamr PRIVATE -Wall -Wextra)
 endif()
 
 # Install
 
-set_target_properties(extism-wamr PROPERTIES PUBLIC_HEADER "src/extism-wamr.h")
+set_target_properties(extism_wamr PROPERTIES OUTPUT_NAME "extism-wamr")
+set_target_properties(extism_wamr PROPERTIES PUBLIC_HEADER "src/extism-wamr.h")
 
-install(TARGETS extism-wamr
+install(TARGETS extism_wamr
   LIBRARY DESTINATION "lib"
   PUBLIC_HEADER DESTINATION "include"
 )
 
-add_executable(extism-wamr-exe bin/extism-wamr.c)
-set_target_properties(extism-wamr-exe PROPERTIES OUTPUT_NAME "extism-wamr")
-target_link_libraries(extism-wamr-exe extism-wamr)
+add_executable(extism_wamr-exe bin/extism-wamr.c)
+set_target_properties(extism_wamr-exe PROPERTIES OUTPUT_NAME "extism-wamr")
+target_link_libraries(extism_wamr-exe extism_wamr)
 add_test(
-    NAME extism-wamr-exe 
-    COMMAND extism-wamr-exe ${PROJECT_SOURCE_DIR}/wasm/count-vowels.wasm count_vowels aaa
+    NAME extism_wamr-exe 
+    COMMAND extism_wamr-exe ${PROJECT_SOURCE_DIR}/wasm/count-vowels.wasm count_vowels aaa
 )
-install(TARGETS extism-wamr-exe
+install(TARGETS extism_wamr-exe
   RUNTIME DESTINATION "bin"
 )
 

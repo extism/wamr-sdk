@@ -20,13 +20,6 @@ typedef enum {
   ExtismStatusCallFailed,
 } ExtismStatus;
 
-// Determines the maximum number of modules that can be specified in a manifest
-// at once
-#define EXTISM_MAX_LINKED_MODULES 4
-
-// Maximum number of config values
-#define EXTISM_MAX_CONFIG 16
-
 // `ExtismWasm` is used to specify Wasm data when creating plugins
 typedef struct {
   // Module name
@@ -36,6 +29,10 @@ typedef struct {
   // Data length
   size_t length;
 } ExtismWasm;
+
+ExtismStatus extism_wasm_load_file(ExtismWasm *wasm, const char *filename,
+                                   const char *name);
+void extism_wasm_cleanup(ExtismWasm *wasm);
 
 // `ExtismConfig` is used  to store a key/value pair that can be accessed using
 // `extism_config_get` from inside a plugin
@@ -62,10 +59,8 @@ typedef struct {
 // `ExtismManifest` is used configure which Wasm module should be loaded
 typedef struct {
   // Wasm modules
-  ExtismWasm wasm[EXTISM_MAX_LINKED_MODULES];
-  ExtismConfig config[EXTISM_MAX_CONFIG];
-  // Number of modules, an config items used
-  size_t wasm_count, config_count;
+  ExtismWasm *wasm;
+  ExtismConfig *config;
   // Memory config
   ExtismMemoryConfig memory;
 } ExtismManifest;
@@ -74,6 +69,7 @@ typedef struct {
 void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
                           size_t nwasm, const ExtismConfig *config,
                           size_t nconfig, const ExtismMemoryConfig *memory);
+void extism_manifest_cleanup(ExtismManifest *manifest);
 
 // Initiailze runtime, this must be called before anything else and only one
 // runtime can be initialized at a time

@@ -1,5 +1,6 @@
 #include "extism-wamr.h"
 #include "internal.h"
+#include "util.h"
 
 #include <string.h>
 
@@ -13,8 +14,9 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   plugin->exec = NULL;
   plugin->instance = NULL;
   plugin->main = NULL;
-  plugin->var_count = 0;
-  plugin->module_count = manifest->wasm_count;
+  plugin->vars = array_new(sizeof(ExtismVar), 8);
+  plugin->modules =
+      array_new(sizeof(wasm_module_t), ARRAY_LENGTH(manifest->wasm));
   plugin->manifest = manifest;
 
   // Initialize kernel
@@ -46,7 +48,7 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   wasm_runtime_register_natives(
       "extism:host/env", add_symbols(&SYMBOLS, kernel, nkernel), nkernel);
 
-  for (size_t i = 0; i < plugin->module_count; i++) {
+  for (size_t i = 0; i < ARRAY_CAPACITY(plugin->modules); i++) {
     bool name_is_null = manifest->wasm[i].name == NULL;
     bool name_is_main = (!name_is_null && strlen(manifest->wasm[i].name) == 4 &&
                          strncmp(manifest->wasm[i].name, "main", 4) == 0);
@@ -64,6 +66,7 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
   }
 
   if (plugin->main == NULL) {
+    puts("NO MAIN");
     return ExtismStatusErrNoWasm;
   }
 
@@ -98,6 +101,9 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin,
 ExtismPlugin *extism_plugin_new(const ExtismManifest *manifest, char *errmsg,
                                 size_t errlen) {
   ExtismPlugin *plugin = os_malloc(sizeof(ExtismPlugin));
+  if (plugin == NULL) {
+    return NULL;
+  }
   if (init_plugin(plugin, manifest, errmsg, errlen) != ExtismStatusOk) {
     extism_plugin_free(plugin);
     return NULL;
@@ -130,14 +136,16 @@ static void cleanup_plugin(ExtismPlugin *plugin) {
     wasm_runtime_deinstantiate(plugin->instance);
   }
 
-  for (size_t i = 0; i < plugin->module_count; i++) {
+  for (size_t i = 0; i < ARRAY_LENGTH(plugin->modules); i++) {
     wasm_runtime_unload(plugin->modules[i]);
   }
+  array_free(plugin->modules);
 
-  for (size_t i = 0; i < plugin->var_count; i++) {
+  for (size_t i = 0; i < ARRAY_LENGTH(plugin->vars); i++) {
     os_free(plugin->vars[i].key);
     os_free(plugin->vars[i].value);
   }
+  array_free(plugin->vars);
 
   cleanup_kernel(&plugin->kernel);
 }
@@ -343,13 +351,27 @@ void extism_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
     manifest->memory.heap_size = 65536 * 10;
   }
 
-  assert(nwasm <= EXTISM_MAX_LINKED_MODULES);
-  memcpy(manifest->wasm, wasm, nwasm * sizeof(ExtismWasm));
-  manifest->wasm_count = nwasm;
+  manifest->wasm = array_new(sizeof(ExtismWasm), nwasm);
+  assert(manifest->wasm);
+  for (size_t i = 0; i < nwasm; i++) {
+    manifest->wasm = array_push(manifest->wasm, &wasm[i]);
+  }
 
-  assert(nconfig <= EXTISM_MAX_CONFIG);
-  memcpy(manifest->config, config, nconfig * sizeof(ExtismConfig));
-  manifest->config_count = nconfig;
+  manifest->config = array_new(sizeof(ExtismConfig), nconfig);
+  assert(manifest->config);
+  for (size_t i = 0; i < nconfig; i++) {
+    manifest->config = array_push(manifest->config, &config[i]);
+  }
+}
+
+void extism_manifest_cleanup(ExtismManifest *manifest) {
+  if (manifest->config) {
+    array_free(manifest->config);
+  }
+
+  if (manifest->wasm) {
+    array_free(manifest->wasm);
+  }
 }
 
 void extism_plugin_use_kernel(ExtismPlugin *plugin) {
@@ -382,4 +404,27 @@ void extism_runtime_cleanup() {
 
 void *extism_host_function_data(ExtismExecEnv *env) {
   return wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
+}
+
+ExtismStatus extism_wasm_load_file(ExtismWasm *wasm, const char *filename,
+                                   const char *name) {
+  size_t len = 0;
+  uint8_t *data = read_file(filename, &len);
+  if (data == NULL) {
+    return ExtismStatusErr;
+  }
+
+  wasm->data = data;
+  wasm->length = len;
+  wasm->name =
+      name == NULL ? string_copy("main", 4) : string_copy(name, strlen(name));
+  return ExtismStatusOk;
+}
+void extism_wasm_cleanup(ExtismWasm *wasm) {
+  if (wasm->data) {
+    os_free(wasm->data);
+  }
+  if (wasm->name) {
+    os_free(wasm->name);
+  }
 }

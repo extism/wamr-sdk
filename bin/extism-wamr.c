@@ -5,33 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint8_t *read_file(const char *filename, size_t *len) {
-
-  FILE *fp = fopen(filename, "rb");
-  if (fp == NULL) {
-    return NULL;
-  }
-  fseek(fp, 0, SEEK_END);
-  size_t length = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-
-  uint8_t *data = malloc(length);
-  if (data == NULL) {
-    fclose(fp);
-    return NULL;
-  }
-
-  assert(fread(data, 1, length, fp) == length);
-  fclose(fp);
-
-  *len = length;
-  return data;
-}
-
 uint64_t host_reflect(ExtismExecEnv *env, uint64_t x) { return x; }
 
 int main(int argc, char *argv[]) {
-  size_t len = 0, datalen = 0;
+  size_t len = 0;
   char errbuf[1024];
 
   // Setup loop
@@ -48,21 +25,14 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  uint8_t *data = read_file(argv[1], &datalen);
-  if (data == NULL) {
-    return 2;
-  }
+  ExtismWasm wasm;
+  extism_wasm_load_file(&wasm, argv[1], NULL);
 
   // Initialize the runtime, this must be done before a plugin can be created
   extism_runtime_init();
 
   // Specify the modules to be loaded, setting `name` to `NULL` marks a module
   // at the main module
-  ExtismWasm wasm = {
-      .data = data,
-      .length = datalen,
-      .name = NULL,
-  };
   ExtismManifest manifest;
   ExtismMemoryConfig mem;
   mem.stack_size = 8192;
@@ -79,7 +49,7 @@ int main(int argc, char *argv[]) {
     fputs("ERROR: ", stderr);
     fputs(errbuf, stderr);
     fputs("\n", stderr);
-    free(data);
+    extism_wasm_cleanup(&wasm);
     extism_runtime_cleanup();
     return 1;
   }
@@ -109,6 +79,7 @@ int main(int argc, char *argv[]) {
   // Cleanup
   extism_plugin_free(plugin);
   extism_runtime_cleanup();
-  free(data);
+  extism_manifest_cleanup(&manifest);
+  extism_wasm_cleanup(&wasm);
   return 0;
 }

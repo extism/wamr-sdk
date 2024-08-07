@@ -1,0 +1,10 @@
+#define extism_wamr_VERSION_MAJOR @extism_wamr_VERSION_MAJOR@
+#define extism_wamr_VERSION_MINOR @extism_wamr_VERSION_MINOR@
+
+#define EXPAND_AND_STRINGIFY(s) STRINGIFY(s)
+#define STRINGIFY(s) #s
+
+#define extism_wamr_VERSION_MAJOR_STR EXPAND_AND_STRINGIFY(extism_wamr_VERSION_MAJOR)
+#define extism_wamr_VERSION_MINOR_STR EXPAND_AND_STRINGIFY(extism_wamr_VERSION_MINOR)
+
+#define extism_wamr_VERSION extism_wamr_VERSION_MAJOR_STR "." extism_wamr_VERSION_MINOR_STR

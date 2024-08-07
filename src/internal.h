@@ -4,6 +4,8 @@
 #include "wasm_exec_env.h"
 #include "wasm_native.h"
 
+#include "util.h"
+
 #include <assert.h>
 
 struct ExtismKernel {
@@ -31,13 +33,11 @@ struct ExtismKernel {
 };
 
 typedef struct ExtismPlugin {
-  ExtismVar vars[EXTISM_MAX_CONFIG];
-  size_t var_count;
+  ExtismVar *vars;
   const ExtismManifest *manifest;
   struct ExtismKernel kernel;
-  wasm_module_t modules[EXTISM_MAX_LINKED_MODULES];
+  wasm_module_t *modules;
   wasm_module_t main;
-  size_t module_count;
   wasm_exec_env_t exec;
   wasm_module_inst_t instance;
 } ExtismPlugin;
