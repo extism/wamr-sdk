@@ -5,11 +5,11 @@
 #include "wasm_exec_env.h"
 #include "wasm_native.h"
 
-#include "util.h"
-
 #include "json.h"
+#include "util.h"
+#include "uuid4.h"
+
 #include <assert.h>
-#include <uuid/uuid.h>
 
 struct FuncInner {
   ExtismPlugin *plugin;
@@ -50,7 +50,7 @@ typedef struct ExtismPlugin {
   wasm_module_t main;
   wasm_exec_env_t exec;
   wasm_module_inst_t instance;
-  uuid_t id;
+  uuid4_t id;
   void *user_data;
 } ExtismPlugin;
 

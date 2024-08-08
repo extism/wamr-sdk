@@ -10,7 +10,9 @@
 //  a
 //  * UUIDv4
 //  */
-const uint8_t *extism_plugin_id(ExtismPlugin *plugin) { return plugin->id; }
+const uint8_t *extism_plugin_id(ExtismPlugin *plugin) {
+  return plugin->id.bytes;
+}
 
 // /**
 //  * Get the current plugin's associated host context data. Returns null if
