@@ -27,7 +27,6 @@ void *extism_current_plugin_host_context(ExtismCurrentPlugin *plugin) {
 //  * NOTE: this should only be called from host functions.
 //  */
 uint8_t *extism_current_plugin_memory(ExtismCurrentPlugin *plugin) {
-
   void *ptr = NULL;
   ExtismPlugin *p = extism_wamr_exec_env_plugin((ExtismExecEnv *)plugin);
   WITH_KERNEL(
@@ -90,24 +89,46 @@ struct Func {
   void (*free_user_data)(void *);
 };
 
-static void trampoline(ExtismCurrentPlugin *plugin, const ExtismVal *inputs,
-                       ExtismSize n_inputs, ExtismVal *outputs,
-                       ExtismSize n_outputs, void *data) {}
+// static void trampoline(ExtismCurrentPlugin *plugin, const ExtismVal *inputs,
+//                        ExtismSize n_inputs, ExtismVal *outputs,
+//                        ExtismSize n_outputs, void *data) {}
+
+static void trampoline(ExtismExecEnv *env, uint64_t *params) {}
+// const ExtismVal *inputs,
+//                      ExtismSize n_inputs, ExtismVal *outputs,
+//                      ExtismSize n_outputs, void *data) {}
 
 ExtismFunction *
 extism_function_new(const char *name, const ExtismValType *inputs,
                     ExtismSize n_inputs, const ExtismValType *outputs,
                     ExtismSize n_outputs, ExtismFunctionType func,
                     void *user_data, void (*free_user_data)(void *_)) {
-  // TODO:
-  // extism_host_function("extism:host/env", name, "",
-  return NULL;
+  extism_wamr_host_function("extism:host/env", name, "", trampoline, user_data);
+  struct Func *f = malloc(sizeof(struct Func));
+  if (!f) {
+    return NULL;
+  }
+  f->user_data = user_data;
+  f->free_user_data = free_user_data;
+  return (ExtismFunction *)f;
 }
 
 // /**
 //  * Free `ExtismFunction`
 //  */
-void extism_function_free(ExtismFunction *f) {}
+void extism_function_free(ExtismFunction *f) {
+  if (!f) {
+    return;
+  }
+
+  struct Func *g = (struct Func *)f;
+
+  if (g->free_user_data) {
+    g->free_user_data(g->user_data);
+  }
+
+  free(g);
+}
 
 // /**
 //  * Set the namespace of an `ExtismFunction`
@@ -211,8 +232,11 @@ bool extism_plugin_function_exists(ExtismPlugin *plugin,
 //  * `data`: is the input data
 //  * `data_len`: is the length of `data`
 //  */
-// int32_t extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
-//                            const uint8_t *data, ExtismSize data_len);
+int32_t extism_plugin_call(ExtismPlugin *plugin, const char *func_name,
+                           const uint8_t *data, ExtismSize data_len) {
+  return extism_plugin_call_with_host_context(plugin, func_name, data, data_len,
+                                              NULL);
+}
 
 // /**
 //  * Call a function with host context.

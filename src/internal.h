@@ -1,5 +1,6 @@
 #pragma once
 #include "extism-wamr.h"
+#include "libextism.h"
 
 #include "wasm_exec_env.h"
 #include "wasm_native.h"
@@ -10,9 +11,11 @@
 #include <assert.h>
 #include <uuid/uuid.h>
 
-struct UserData {
+struct FuncInner {
   ExtismPlugin *plugin;
   void *user;
+  // ExtismValType params[16];
+  // ExtismValType results[1];
 };
 
 struct ExtismKernel {

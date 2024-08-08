@@ -28,7 +28,7 @@ static ExtismStatus init_plugin(ExtismPlugin *plugin, ExtismManifest *manifest,
   {.symbol = #name,                                                            \
    .signature = args,                                                          \
    .func_ptr = k_##name,                                                       \
-   .attachment = calloc(1, sizeof(struct UserData))}
+   .attachment = calloc(1, sizeof(struct FuncInner))}
   NativeSymbol kernel[] = {
       FN(alloc, "(I)I"),           FN(free, "(I)"),
       FN(output_set, "(II)"),      FN(output_length, "()I"),
@@ -218,7 +218,7 @@ static uint64_t plugin_error(ExtismPlugin *plugin) {
 }
 
 void plugin_set_error(ExtismPlugin *plugin, const char *s) {
-  uint64_t offs = plugin_alloc(plugin, s, strlen(s));
+  uint64_t offs = plugin_alloc(plugin, s, strlen(s) + 1);
   wasm_val_t params[] = {{.kind = WASM_I64, .of = {.i64 = offs}}};
   WITH_KERNEL(plugin,
               wasm_runtime_call_wasm_a(plugin->exec, plugin->kernel.error_set,
@@ -265,7 +265,7 @@ int32_t extism_wamr_plugin_call_with_host_context(ExtismPlugin *plugin,
 
   extism_wamr_plugin_use_plugin(plugin);
   for (size_t i = 0; i < ARRAY_LENGTH(SYMBOLS); i++) {
-    ((struct UserData *)(SYMBOLS[i].attachment))->plugin = plugin;
+    ((struct FuncInner *)(SYMBOLS[i].attachment))->plugin = plugin;
   }
   if (!wasm_runtime_call_wasm_a(plugin->exec, f, result_count, results, 0,
                                 NULL)) {
@@ -321,9 +321,9 @@ void extism_wamr_host_function(const char *module, const char *name,
                                void *user_data) {
   NativeSymbol f;
   f.symbol = name;
-  f.attachment = calloc(1, sizeof(struct UserData));
+  f.attachment = calloc(1, sizeof(struct FuncInner));
   assert(f.attachment);
-  ((struct UserData *)f.attachment)->user = user_data;
+  ((struct FuncInner *)f.attachment)->user = user_data;
   f.func_ptr = func;
   f.signature = signature;
   wasm_runtime_register_natives(module, add_symbols(&SYMBOLS, &f, 1), 1);
@@ -421,13 +421,13 @@ void extism_wamr_runtime_cleanup() {
 }
 
 void *extism_wamr_exec_env_data(ExtismExecEnv *env) {
-  struct UserData *inner =
+  struct FuncInner *inner =
       wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
   return inner->user;
 }
 
 ExtismPlugin *extism_wamr_exec_env_plugin(ExtismExecEnv *env) {
-  struct UserData *inner =
+  struct FuncInner *inner =
       wasm_runtime_get_function_attachment((wasm_exec_env_t)env);
   return inner->plugin;
 }
