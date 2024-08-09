@@ -1,6 +1,7 @@
 #ifndef _EXTISM_WAMR_H
 #define _EXTISM_WAMR_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -28,6 +29,8 @@ typedef struct {
   uint8_t *data;
   // Data length
   size_t length;
+  // Free data when manifest is freed
+  bool free;
 } ExtismWasm;
 
 ExtismStatus extism_wamr_wasm_load_file(ExtismWasm *wasm, const char *filename,

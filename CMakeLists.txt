@@ -95,9 +95,13 @@ target_sources(extism_wamr PUBLIC
   src/extism.c
   src/libextism.c
   src/uuid4.c
+  src/cJSON.c
+  src/cJSON_Utils.c
+  src/manifest.c
   ${WAMR_RUNTIME_LIB_SOURCE}
 )
-target_link_libraries (extism_wamr PUBLIC m)
+find_package( CURL REQUIRED )
+target_link_libraries (extism_wamr PUBLIC m CURL::libcurl)
 if(MSVC)
   target_compile_options(extism_wamr PRIVATE /W4 /WX)
 else()

@@ -26,11 +26,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  ExtismWasm wasm;
-  extism_wamr_wasm_load_file(&wasm, argv[1], NULL);
-
   // Initialize the runtime, this must be done before a plugin can be created
   extism_wamr_runtime_init();
+
+  ExtismWasm wasm;
+  extism_wamr_wasm_load_file(&wasm, argv[1], NULL);
 
   // Specify the modules to be loaded, setting `name` to `NULL` marks a module
   // at the main module
@@ -82,6 +82,5 @@ cleanup:
     extism_wamr_plugin_free(plugin);
   extism_wamr_runtime_cleanup();
   extism_wamr_manifest_cleanup(&manifest);
-  extism_wamr_wasm_cleanup(&wasm);
   return rc;
 }
