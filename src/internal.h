@@ -5,7 +5,6 @@
 #include "wasm_exec_env.h"
 #include "wasm_native.h"
 
-#include "json.h"
 #include "util.h"
 #include "uuid4.h"
 

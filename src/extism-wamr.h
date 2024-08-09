@@ -30,7 +30,7 @@ typedef struct {
   // Data length
   size_t length;
   // Free data when manifest is freed
-  bool free;
+  bool owned;
 } ExtismWasm;
 
 ExtismStatus extism_wamr_wasm_load_file(ExtismWasm *wasm, const char *filename,
@@ -40,8 +40,9 @@ void extism_wamr_wasm_cleanup(ExtismWasm *wasm);
 // `ExtismConfig` is used  to store a key/value pair that can be accessed using
 // `extism_config_get` from inside a plugin
 typedef struct {
-  const char *key;
-  const char *value;
+  char *key;
+  char *value;
+  bool owned;
 } ExtismConfig;
 
 // `ExtismVar` is used to store a key/value pair that can be accessed using
@@ -74,6 +75,8 @@ void extism_wamr_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
                                size_t nconfig,
                                const ExtismMemoryConfig *memory);
 void extism_wamr_manifest_cleanup(ExtismManifest *manifest);
+bool extism_wamr_manifest_parse(ExtismManifest *manifest, const void *s,
+                                size_t len);
 
 // Initiailze runtime, this must be called before anything else and only one
 // runtime can be initialized at a time

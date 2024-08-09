@@ -2,8 +2,9 @@
 #include "./config.h"
 #include "internal.h"
 
+#include "cJSON.h"
+
 #include "extism-wamr.h"
-#include "json.h"
 
 // /**
 //  * Get a plugin's ID, the returned bytes are a 16 byte buffer that represent
@@ -154,8 +155,12 @@ ExtismPlugin *extism_plugin_new(uint8_t *wasm, ExtismSize wasm_size,
                                 char **errmsg) {
   (void)with_wasi;
   ExtismManifest manifest;
-  ExtismWasm module = {.data = wasm, .length = wasm_size, .name = NULL};
-  extism_wamr_manifest_init(&manifest, &module, 1, NULL, 0, NULL);
+
+  if (!extism_wamr_manifest_parse(&manifest, wasm, wasm_size)) {
+    ExtismWasm module = {
+        .data = wasm, .length = wasm_size, .name = NULL, .owned = false};
+    extism_wamr_manifest_init(&manifest, &module, 1, NULL, 0, NULL);
+  }
 
   for (size_t i = 0; i < n_functions; i++) {
     // TODO:
@@ -208,14 +213,14 @@ bool extism_plugin_cancel(const ExtismCancelHandle *handle) {
 //  */
 bool extism_plugin_config(ExtismPlugin *plugin, const uint8_t *json,
                           ExtismSize json_size) {
-  struct json_value_s *parsed = json_parse(json, json_size);
+  cJSON *parsed = cJSON_ParseWithLength((char *)json, json_size);
   if (parsed == NULL) {
     return false;
   }
 
   // TODO: get keys/values and add them to plugin->manifest config
 
-  free(parsed);
+  cJSON_Delete(parsed);
   return true;
 }
 

@@ -386,12 +386,18 @@ void extism_wamr_manifest_init(ExtismManifest *manifest, const ExtismWasm *wasm,
 void extism_wamr_manifest_cleanup(ExtismManifest *manifest) {
   if (manifest->config) {
 
+    for (size_t i = 0; i < ARRAY_LENGTH(manifest->config); i++) {
+      if (manifest->config[i].owned) {
+        os_free(manifest->config[i].key);
+        os_free(manifest->config[i].value);
+      }
+    }
     array_free(manifest->config);
   }
 
   if (manifest->wasm) {
     for (size_t i = 0; i < ARRAY_LENGTH(manifest->wasm); i++) {
-      if (manifest->wasm->free) {
+      if (manifest->wasm->owned) {
         extism_wamr_wasm_cleanup(&manifest->wasm[i]);
       }
     }
@@ -447,7 +453,7 @@ ExtismStatus extism_wamr_wasm_load_file(ExtismWasm *wasm, const char *filename,
     return ExtismStatusErr;
   }
 
-  wasm->free = true;
+  wasm->owned = true;
   wasm->data = data;
   wasm->length = len;
   wasm->name =
